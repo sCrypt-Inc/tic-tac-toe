@@ -1,8 +1,8 @@
 {
-  "name": "cointoss",
+  "name": "tic-tac-toe",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://sCrypt-Inc.github.io/cointoss",
+  "homepage": "https://sCrypt-Inc.github.io/tic-tac-toe",
   "dependencies": {
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
