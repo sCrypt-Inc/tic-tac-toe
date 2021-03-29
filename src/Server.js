@@ -84,7 +84,6 @@ class Server extends EventEmitter {
         game.event = 'JoinGame';
         console.log('JoinGame', game);
         window.localStorage.setItem('game', JSON.stringify(game));
-
     }
 
     saveGame = (game, event) => {
@@ -96,15 +95,12 @@ class Server extends EventEmitter {
 
 
     getGame = () => {
-        console.log('getGame');
-
         let gameJson = window.localStorage.getItem('game');
         if (gameJson && gameJson !== null) {
             return JSON.parse(gameJson);
         }
         return undefined
     }
-
 
 
 
@@ -149,15 +145,26 @@ class Server extends EventEmitter {
     }
 
 
-    addBobSignListener(cb) {
-        console.log('addBobSignListener');
-        this.on('BobSign', cb);
+    addDeployedListener(cb) {
+        console.log('addDeployedListener');
+        this.on('deployed', cb);
     }
 
 
-    removeBobSignListener(cb) {
-        console.log('removeBobSignListener');
-        this.off('BobSign', cb)
+    removeDeployedListener(cb) {
+        console.log('removeDeployedListener');
+        this.off('deployed', cb)
+    }
+
+
+    addNextListener(cb) {
+        console.log('addNextListener');
+        this.on('next', cb);
+    }
+
+    removeNextListener(cb) {
+        console.log('removeNextListener');
+        this.off('next', cb)
     }
 }
 

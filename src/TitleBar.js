@@ -38,38 +38,8 @@ function TitleBar(prop) {
 
 
 
-    useEffect(async () => {
+    useEffect(() => {
 
-        if (server.getIdentity() === 'bob' && prop.game && prop.game.player === "") {
-
-
-            async function fetchContract() {
-                console.log("fetchContract..")
-
-                let bobPubKey = await web3.wallet.publicKey();
-                let {
-                    contract: TictactoeContract
-                } = await web3.loadContract("/tic-tac-toe/tictactoe_desc.json");
-
-                let contractInstance = new TictactoeContract(
-                    new PubKey(toHex(prop.game.alicePubKey)),
-                    new PubKey(toHex(bobPubKey)));
-
-                console.log("initContract", contractInstance)
-                return contractInstance;
-            }
-
-
-            let contractInstance = await fetchContract();
-
-
-            let tx = await web3.buildUnsignDeployTx(contractInstance, prop.game.amount * 2);
-            server.JoinGame(Object.assign({}, server.existGamebyOther(), {
-                "tx": tx,
-                "player": "Bob"
-            }))
-
-        }
     })
 
     if (prop.started) {

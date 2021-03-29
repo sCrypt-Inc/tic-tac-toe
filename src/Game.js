@@ -1,6 +1,7 @@
 import React from 'react';
 import Board from './Board';
-import { web3, bsv, PubKey, toHex } from 'scryptlib';
+import { web3, bsv, PubKey, toHex, Input, Bytes, Sig, SignType, getPreimage, wallet } from 'scryptlib';
+import server from './Server';
 
 
 const calculateWinner = (squares) => {
@@ -17,7 +18,7 @@ const calculateWinner = (squares) => {
 
   for (let i = 0; i < lines.length; i += 1) {
     const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+    if (squares[a] && squares[b] && squares[c] && squares[a].label === squares[b].label && squares[a].label === squares[c].label) {
       return { winner: squares[a], winnerRow: lines[i] };
     }
   }
@@ -54,97 +55,159 @@ const initialState = {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.state = initialState;
+
+
+    console.log('Game constructor', props.game)
+
+    if (props.game && props.game.gameState) {
+      this.state = props.game.gameState;
+    } else {
+      this.state = initialState;
+    }
   }
 
+
+
+  componentWillReceiveProps(nextProps) {
+    console.log('componentWillReceiveProps', nextProps)
+    if (nextProps.game && nextProps.game.gameState) {
+      this.setState(nextProps.game.gameState);
+    }
+
+  }
+
+
   async componentDidMount() {
+    console.log('componentDidMount', this.props)
 
 
   }
 
   componentWillUnmount() {
+
   }
 
 
-  handleClick(i) {
+  async handleClick(i) {
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
+    squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
 
-    if (calculateWinner(squares).winner || squares[i]) {
+    if (server.getIdentity() !== "alice" && this.state.xIsNext) {
+      console.error('now is alice turn')
       return;
     }
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    this.setState({
-      history: history.concat([
-        {
-          squares,
-          currentLocation: getLocation(i),
-          stepNumber: history.length,
-        },
-      ]),
-      xIsNext: !this.state.xIsNext,
-      currentStepNumber: history.length,
-    });
+
+    if (server.getIdentity() !== "bob" && !this.state.xIsNext) {
+      console.error('now is bob turn')
+      return;
+    }
+
+
+
+    let newState = (!this.state.xIsNext ? '00' : '01') + squares.map(square => {
+
+      if (square && square.label === 'X') {
+        return '01'
+      } else if (square && square.label === 'O') {
+        return '02'
+      } else {
+        return '00';
+      }
+    }).join('');
+
+    let newLockingScript = "";
+    let winner = calculateWinner(squares).winner;
+    if (winner) {
+      // winner is alice
+
+      let address = await web3.wallet.changeAddress();
+
+      newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex()
+
+    } else {
+      newLockingScript = [this.props.contractInstance.codePart.toHex(), bsv.Script.fromASM(newState).toHex()].join('');
+    }
+
+
+    const FEE = 2000;
+
+    let tx = {
+      inputs: [{
+        utxo: this.props.game.lastUtxo,
+        sequence: 0,
+        script: ""
+      }],
+      outputs: [{
+        satoshis: this.props.game.lastUtxo.satoshis - FEE,
+        script: newLockingScript
+      }]
+    }
+
+
+    let preimage = web3.getPreimage(tx);
+
+    web3.wallet.signTx(tx, 0, SignType.ALL, true).then(sig => {
+
+      let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), this.props.game.lastUtxo.satoshis - FEE, preimage).toHex();
+
+      tx.inputs[0].script = unlockScript;
+
+      web3.sendTx(tx).then(txid => {
+
+        squares[i].tx = txid;
+        let gameState = {
+          history: history.concat([
+            {
+              squares,
+              currentLocation: getLocation(i),
+              stepNumber: history.length,
+            },
+          ]),
+          xIsNext: !this.state.xIsNext,
+          currentStepNumber: history.length,
+        };
+
+        server.saveGame(Object.assign({}, this.props.game, {
+          gameState: gameState,
+          lastUtxo: {
+            txHash: txid,
+            outputIndex: 0,
+            satoshis: tx.outputs[0].satoshis,
+            script: tx.outputs[0].script
+          }
+        }), 'next')
+
+        this.setState(gameState);
+
+      })
+    })
+
   }
 
-  jumpTo(step) {
-    this.setState({
-      currentStepNumber: step,
-      xIsNext: step % 2 === 0,
-    });
-  }
-
-  sortMoves() {
-    this.setState({
-      history: this.state.history.reverse(),
-    });
-  }
-
-  async reset() {
-    this.setState(Object.assign({}, initialState, {
-      contract: this.state.contract
-    }));
-
-    let tx = await web3.deploy(this.state.contract, 1000);
-
-    console.log('tx', tx)
-
-  }
 
   render() {
     const { history } = this.state;
     const current = history[this.state.currentStepNumber];
     const { winner, winnerRow } = calculateWinner(current.squares);
 
-    const moves = history.map((step, move) => {
-      const currentLocation = step.currentLocation ? `(${step.currentLocation})` : '';
-      const desc = step.stepNumber ? `Go to move #${step.stepNumber}` : 'Go to game start';
-      const classButton = move === this.state.currentStepNumber ? 'button--green' : '';
 
-      return (
-        <li key={move}>
-          <button className={`${classButton} button`} onClick={() => this.jumpTo(move)}>
-            {`${desc} ${currentLocation}`}
-          </button>
-        </li>
-      );
-    });
 
     let status;
     if (winner) {
-      status = `Winner ${winner}`;
+      status = `Winner ${winner.label === 'X' ? 'Alice' : 'Bob'}`;
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
     } else {
-      status = `Next player: ${this.state.xIsNext ? 'X' : 'O'}`;
+      status = `Next player: ${this.state.xIsNext ? 'Alice' : 'Bob'}`;
     }
 
     return (
       <div className="game">
         <div className="game-board">
 
-
+          <div> {status} </div>
 
           <Board
             squares={current.squares}
