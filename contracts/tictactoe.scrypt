@@ -12,22 +12,22 @@ contract TicTacToe {
 
     public function move(int n, Sig sig, int amount, SigHashPreimage txPreimage) {
         require(Tx.checkPreimage(txPreimage));
-        require(n >=0 && n < BOARDLEN);
+        require(n >= 0 && n < BOARDLEN);
 
         bytes scriptCode = Util.scriptCode(txPreimage);
-		int scriptLen = len(scriptCode);
-		
+        int scriptLen = len(scriptCode);
+
         int boardStart = scriptLen - BOARDLEN;
-		// state: turn (1 byte) + board (9 bytes)
-		int turn = unpack(scriptCode[boardStart - TURNLEN : boardStart]);
-		bytes board = scriptCode[boardStart : ];
-        
+        // state: turn (1 byte) + board (9 bytes)
+        int turn = unpack(scriptCode[boardStart - TURNLEN : boardStart]);
+        bytes board = scriptCode[boardStart : ];
+
         // not filled
         require(Util.getElemAt(board, n) == EMPTY);
 
         bytes play = turn == 0 ? ALICE : BOB;
-        PubKey player = turn == 0 ? this.alice: this.bob;
-        
+        PubKey player = turn == 0 ? this.alice : this.bob;
+
         // ensure it's player's turn
         require(checkSig(sig, player));
         // make the move
@@ -39,8 +39,9 @@ contract TicTacToe {
             Ripemd160 playerPKH = ripemd160(sha256(player));
             bytes outputScript = Util.buildPublicKeyHashScript(playerPKH);
             bytes output = Util.buildOutput(outputScript, amount);
-		    outputs = output;
-        } else if (this.full(board)) {
+            outputs = output;
+        }
+        else if (this.full(board)) {
             // draw: equally split, i.e., both outputs have the same amount
             Ripemd160 alicePKH = ripemd160(sha256(this.alice));
             bytes aliceScript = Util.buildPublicKeyHashScript(alicePKH);
@@ -53,29 +54,29 @@ contract TicTacToe {
             outputs = aliceOutput + bobOutput;
         } else {
             // update state: next turn & next board
-            bytes scriptCode_ = scriptCode[: scriptLen - BOARDLEN] + num2bin(1 - turn, TURNLEN) + board;
+            bytes scriptCode_ = scriptCode[ : scriptLen - BOARDLEN - TURNLEN ] + num2bin(1 - turn, TURNLEN) + board;
             bytes output = Util.buildOutput(scriptCode_, amount);
             outputs = output;
         }
 
-  		require(hash256(outputs) == Util.hashOutputs(txPreimage));
+        require(hash256(outputs) == Util.hashOutputs(txPreimage));
     }
 
     // does play win after current move?
-    function won(bytes board, bytes play): bool {
+    function won(bytes board, bytes play) : bool {
         // three in a row, a column, or a diagnoal
         return Util.getElemAt(board, 0) == play && Util.getElemAt(board, 1) == play && Util.getElemAt(board, 2) == play
-            || Util.getElemAt(board, 3) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 5) == play
-            || Util.getElemAt(board, 6) == play && Util.getElemAt(board, 7) == play && Util.getElemAt(board, 8) == play
-            || Util.getElemAt(board, 0) == play && Util.getElemAt(board, 3) == play && Util.getElemAt(board, 6) == play
-            || Util.getElemAt(board, 1) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 7) == play
-            || Util.getElemAt(board, 2) == play && Util.getElemAt(board, 5) == play && Util.getElemAt(board, 8) == play
-            || Util.getElemAt(board, 0) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 8) == play
-            || Util.getElemAt(board, 2) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 6) == play;
+        || Util.getElemAt(board, 3) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 5) == play
+        || Util.getElemAt(board, 6) == play && Util.getElemAt(board, 7) == play && Util.getElemAt(board, 8) == play
+        || Util.getElemAt(board, 0) == play && Util.getElemAt(board, 3) == play && Util.getElemAt(board, 6) == play
+        || Util.getElemAt(board, 1) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 7) == play
+        || Util.getElemAt(board, 2) == play && Util.getElemAt(board, 5) == play && Util.getElemAt(board, 8) == play
+        || Util.getElemAt(board, 0) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 8) == play
+        || Util.getElemAt(board, 2) == play && Util.getElemAt(board, 4) == play && Util.getElemAt(board, 6) == play;
     }
 
     // is board full?
-    function full(bytes board): bool {
+    function full(bytes board) : bool {
         bool full = true;
         int i = 0;
 

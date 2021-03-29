@@ -1,5 +1,7 @@
 import React from 'react';
 import Board from './Board';
+import { web3, bsv, PubKey, toHex } from 'scryptlib';
+
 
 const calculateWinner = (squares) => {
   const lines = [
@@ -55,6 +57,15 @@ class Game extends React.Component {
     this.state = initialState;
   }
 
+  async componentDidMount() {
+
+
+  }
+
+  componentWillUnmount() {
+  }
+
+
   handleClick(i) {
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
@@ -90,8 +101,15 @@ class Game extends React.Component {
     });
   }
 
-  reset() {
-    this.setState(initialState);
+  async reset() {
+    this.setState(Object.assign({}, initialState, {
+      contract: this.state.contract
+    }));
+
+    let tx = await web3.deploy(this.state.contract, 1000);
+
+    console.log('tx', tx)
+
   }
 
   render() {
@@ -125,21 +143,14 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
+
+
+
           <Board
             squares={current.squares}
             winnerSquares={winnerRow}
             onClick={i => this.handleClick(i)}
           />
-        </div>
-        <div className="game-info">
-          <div>{status}</div>
-          <button className="button" onClick={() => this.sortMoves()}>
-            Sort moves
-          </button>
-          <button className="button button--new-game" onClick={() => this.reset()}>
-            New game
-          </button>
-          <ol>{moves}</ol>
         </div>
       </div>
     );
