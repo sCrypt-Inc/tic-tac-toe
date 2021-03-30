@@ -22,9 +22,21 @@ function App() {
     //let tx = await web3.deploy(contractInstance, 10000);
     console.log('startBet with amount', amount)
 
+    if (server.getIdentity() === 'bob') {
+      alert('Only alice can start bet')
+      return
+    }
+
     if (web3.wallet) {
 
       //let tx = await web3.buildUnsignDeployTx(contractInstance, 10000);
+
+      let balance = await web3.wallet.balance();
+
+      if (amount > balance) {
+        alert('Please fund your wallet address first')
+        return
+      }
 
       let alicePubKey = await web3.wallet.publicKey();
 
@@ -150,6 +162,14 @@ function App() {
 
       let bobPubKey = await web3.wallet.publicKey();
 
+      let balance = await web3.wallet.balance();
+
+
+      if (balance <= game.amount) {
+        alert('no available utxos or  balance is not enough, please fund your wallet')
+        return;
+      }
+
       game = Object.assign(game, {
         "bobPubKey": bobPubKey,
         "player": "Bob"
@@ -160,18 +180,32 @@ function App() {
 
       console.log('bobJoin fetchContract', c)
       if (c != null) {
-        let tx = await web3.buildUnsignDeployTx(c, game.amount * 2);
-
-        server.JoinGame(Object.assign(game, {
-          "tx": tx
-        }))
+        web3.buildUnsignDeployTx(c, game.amount).then(tx => {
+          tx.outputs[0].satoshis = game.amount * 2;
+          server.JoinGame(Object.assign(game, {
+            "tx": tx
+          }))
+        }).catch(e => {
+          if (e.message === 'no utxos') {
+            alert('no available utxos, please fund your wallet')
+          }
+          console.error('buildUnsignDeployTx error', e)
+        })
       }
     }
 
 
     if (server.getIdentity() === 'bob' && game && !game.deploy) {
 
-      bobJoin(game)
+      if (web3.wallet) {
+        bobJoin(game)
+      } else {
+        setTimeout(() => {
+          alert('Please create your wallet and fund it');
+        }, 1000)
+
+      }
+
 
     } else {
       fetchContract(game);
@@ -194,7 +228,8 @@ function App() {
   }, [contractInstance]);
 
 
-  console.log('render......', server.getGame())
+  const game = server.getGame();
+
   return (
     <div className="App">
       <Wallet updateWallet={() => {
@@ -205,13 +240,12 @@ function App() {
         <h2>
           sCrypt dapp tic-tac-toe
         </h2>
+        <TitleBar startBet={startBet} cancelBet={cancelBet} started={started} game={game} />
 
-        {
-          web3.wallet ? <div><TitleBar startBet={startBet} cancelBet={cancelBet} started={started} game={server.getGame()} /> <Game game={server.getGame()} contractInstance={contractInstance} /> </div> : <div> Please create wallet! </div>
-        }
+        <Game game={game} contractInstance={contractInstance} />
 
       </header>
-    </div>
+    </div >
   );
 }
 

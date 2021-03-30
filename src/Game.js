@@ -72,8 +72,9 @@ class Game extends React.Component {
     console.log('componentWillReceiveProps', nextProps)
     if (nextProps.game && nextProps.game.gameState) {
       this.setState(nextProps.game.gameState);
+    } else {
+      this.setState(initialState);
     }
-
   }
 
 
@@ -89,6 +90,11 @@ class Game extends React.Component {
 
 
   async handleClick(i) {
+
+    if (!this.props.game || !this.props.game.lastUtxo) {
+      console.error("handleClick error", this.props.game)
+      return;
+    }
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
@@ -97,14 +103,15 @@ class Game extends React.Component {
       return;
     }
     squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
+    let player = server.getIdentity();
 
-    if (server.getIdentity() !== "alice" && this.state.xIsNext) {
-      console.error('now is alice turn')
-      return;
-    }
+    if (player === "alice" && this.state.xIsNext) {
 
-    if (server.getIdentity() !== "bob" && !this.state.xIsNext) {
-      console.error('now is bob turn')
+    } else if (player === "bob" && !this.state.xIsNext) {
+
+    } else {
+      alert(`now is ${this.state.xIsNext ? 'alice' : 'bob'} turn `)
+      console.error(`now is ${this.state.xIsNext ? 'alice' : 'bob'} turn , but got ${player}`)
       return;
     }
 
@@ -234,11 +241,31 @@ class Game extends React.Component {
 
 
 
+    const game = server.getGame();
+
+
+
+
     let status;
+    let end;
+
+
+    let bet;
+    if (game && game.deploy) {
+      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
+    }
+
+
     if (winner) {
       status = `Winner ${winner.label === 'X' ? 'Alice' : 'Bob'}`;
+      if (game && game.lastUtxo) {
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+      }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
+      if (game && game.lastUtxo) {
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+      }
     } else {
       status = `Next player: ${this.state.xIsNext ? 'Alice' : 'Bob'}`;
     }
@@ -247,13 +274,18 @@ class Game extends React.Component {
       <div className="game">
         <div className="game-board">
 
-          <div> {status} </div>
+          <div className="game-status"> {status} </div>
 
           <Board
             squares={current.squares}
             winnerSquares={winnerRow}
             onClick={i => this.handleClick(i)}
           />
+
+          <div className="game-title">
+            {bet}
+            {end}
+          </div>
         </div>
       </div>
     );

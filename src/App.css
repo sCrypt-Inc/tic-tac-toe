@@ -36,11 +36,9 @@
   }
 }
 
-
-
 .board-row:after {
   clear: both;
-  content: '';
+  content: "";
   display: table;
 }
 
@@ -52,15 +50,21 @@
   background: #fff;
   border: 1px solid #999;
   float: left;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 34px;
-  height: 54px;
+
+  line-height: 6rem;
+  height: 6em;
   margin-right: -1px;
   margin-top: -1px;
   padding: 0;
   text-align: center;
-  width: 54px;
+  width: 6em;
+}
+
+.square a {
+  color: black;
+  text-decoration: none;
+  font-size: 6rem;
+  font-weight: bold;
 }
 
 .square--green {
@@ -80,10 +84,39 @@
   flex-direction: row;
 }
 
+.game-status {
+  margin: 1em 1em;
+}
+
 .wallet {
   position: absolute;
   right: 10px;
   top: 10px;
+  display: flex;
+  flex-direction: row;
+}
+
+.wallet label {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.walletqrcode {
+  width: fit-content;
+  height: fit-content;
+}
+
+.walletInfo {
+  margin-top: 2em;
+  width: fit-content;
+  height: fit-content;
+  text-align: left;
+}
+
+a {
+  color: #4caf50;
+  font-size: medium;
 }
 
 .game-info {
@@ -112,4 +145,41 @@
   color: #000;
   font-weight: bold;
   margin-left: 2px;
+}
+
+.wallet {
+  color: #fff;
+}
+
+.wallet .amountButton {
+  min-width: 120px;
+}
+
+.game-title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.bet {
+  width: fit-content;
+}
+
+.bet a {
+  width: fit-content;
+  font-size: calc(10px + 2vmin);
+}
+
+.end {
+  margin-left: 10px;
+}
+
+.end a {
+  width: fit-content;
+  font-size: calc(10px + 2vmin);
+}
+
+.cancel {
+  margin-left: 10px;
 }

@@ -31,26 +31,29 @@ const Wallet = props => {
     useInterval(() => {
 
         if (web3.wallet) {
-            web3.wallet.balance().then(balance => {
-                console.log('update balance ', balance)
-                setBalance(balance)
+            web3.wallet.balance().then(b => {
+                console.log(`update balance old: ${balance} new: ${b}`)
+
+                if (balance === 0 && b > 0) {
+                    alert('Successfully deposit, try F5 to reload the page')
+                }
+
+                setBalance(b)
             })
         }
 
     }, 5000);
 
 
-    const onChange = (e) => {
+    const onClick = (e) => {
 
         try {
-            const privateKey = new bsv.PrivateKey.fromWIF(e.currentTarget.value);
+            const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 
-            if (privateKey && privateKey.network.name === "testnet") {
-                web3.setWallet(new LocalWallet(NetWork.Testnet, e.currentTarget.value));
+            web3.setWallet(new LocalWallet(NetWork.Testnet, privateKey.toWIF()));
 
-                server.savePrivateKey(e.currentTarget.value);
-                props.updateWallet()
-            }
+            server.savePrivateKey(privateKey.toWIF());
+            props.updateWallet();
         } catch (e) {
             console.log('wallet onChange error', e)
         }
@@ -62,26 +65,28 @@ const Wallet = props => {
 
     if (web3.wallet) {
         return <div className="wallet">
-            <div>
+
+            <div className="walletInfo">
+                <div className="address" >
+                    <label>Address: {address}</label>
+                </div>
+
+                <div className="balance">
+                    <label >Balance: {balance}</label>
+                </div>
+
+                <div className="fundtips">
+                    <label >You can fund the address with <a href="https://faucet.bitcoincloud.net" target="_blank"><span> faucets</span></a></label>
+                </div>
+            </div>
+            <div className="walletqrcode">
                 <QRCode value={address}></QRCode>
             </div>
 
-            <div className="">
-                <label htmlFor="amount">Address: {address} </label>
-            </div>
-
-            <div className="">
-                <label htmlFor="amount">Amount: </label>
-                <button id="amount" name="amount" >
-                    {balance}
-                </button>
-            </div>
         </div>
     } else {
         return <div className="wallet">
-            <label htmlFor="key">create wallet:
-                        <input type="text" name="key" placeholder="Import your testnet Private Key" onChange={onChange} />
-            </label>
+            <button className="pure-button button-large" onClick={onClick}>Create Wallet</button>
         </div>
     }
 

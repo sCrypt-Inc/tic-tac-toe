@@ -20,6 +20,10 @@ function TitleBar(prop) {
     const amountRef = useRef(null);
 
     const onStart = (e) => {
+
+        if (!web3.wallet) {
+            alert("Pelease create wallet first")
+        }
         let amount = parseInt(amountRef.current.value);
 
         if (!isNaN(amount)) {
@@ -46,18 +50,17 @@ function TitleBar(prop) {
 
         return (
             <div>
-                正在游戏
-                <a href={`https://test.whatsonchain.com/tx/${prop.game ? prop.game.deploy : ""}`} target="_blank"> 下注合约</a>
-                <button className="cancel" onClick={onCancel}>取消</button>
+                The game is in progress ...
+                <button className="pure-button cancel" onClick={onCancel}>Cancel</button>
             </div>
         );
     }
     else if (server.existGamebySelf()) {
         return (
             <div>
-                等待对方加入游戏 ...
-                <a href={window.location.href + '?player=bob'} target="_blank"> 加入</a>
-                <button className="cancel" onClick={onCancel}>取消</button>
+                Waiting  Bob join the game ...
+                <a className="pure-button" href={window.location.href + '?player=bob'} target="_blank"> Join</a>
+                <button className="pure-button cancel" onClick={onCancel}>Cancel</button>
             </div>
         );
 
@@ -65,17 +68,17 @@ function TitleBar(prop) {
 
         return (
             <div>
-                加入游戏...
+                Joining the game...
             </div>
         );
     }
     else {
         return (
             <div>
-                <label>金额:
+                <label>Bet amount:
                     <input ref={amountRef} type="text" name="amount" />
                 </label>
-                <button className="start" onClick={onStart}>开始</button>
+                <button className="start" onClick={onStart}>Start Bet</button>
             </div>
         );
     }
