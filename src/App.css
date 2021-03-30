@@ -89,11 +89,9 @@
 }
 
 .wallet {
-  position: absolute;
-  right: 10px;
-  top: 10px;
   display: flex;
   flex-direction: row;
+  margin-top: 20px;
 }
 
 .wallet label {
@@ -108,7 +106,6 @@
 }
 
 .walletInfo {
-  margin-top: 2em;
   width: fit-content;
   height: fit-content;
   text-align: left;
@@ -182,4 +179,19 @@ a {
 
 .cancel {
   margin-left: 10px;
+}
+
+.squarewapper {
+  display: inline-block;
+  position: relative;
+  margin: 0 0;
+}
+
+.squareicon {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  width: 30px;
+  height: 30px;
+  color: #000;
 }

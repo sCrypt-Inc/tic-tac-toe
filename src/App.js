@@ -23,7 +23,7 @@ function App() {
     console.log('startBet with amount', amount)
 
     if (server.getIdentity() === 'bob') {
-      alert('Only alice can start bet')
+      alert('Only Alice can start bet')
       return
     }
 
@@ -114,11 +114,13 @@ function App() {
 
   const onDeployed = async (game) => {
     //BOB SIGN
-    if (game.creator === "alice" && server.getIdentity() === "alice" && contractInstance === null) {
+    if (game.creator === "alice" && server.getIdentity() === "alice") {
       console.log('onDeployed', game)
 
       fetchContract(game)
       updateStart(true)
+    } else {
+      console.warn('onDeployed but not receive by Alice', game)
     }
   }
 
@@ -182,9 +184,9 @@ function App() {
       if (c != null) {
         web3.buildUnsignDeployTx(c, game.amount).then(tx => {
           tx.outputs[0].satoshis = game.amount * 2;
-          server.JoinGame(Object.assign(game, {
+          server.saveGame(Object.assign(game, {
             "tx": tx
-          }))
+          }), "JoinGame")
         }).catch(e => {
           if (e.message === 'no utxos') {
             alert('no available utxos, please fund your wallet')
@@ -232,10 +234,7 @@ function App() {
 
   return (
     <div className="App">
-      <Wallet updateWallet={() => {
-        console.log('updateWallet')
-        forceUpdate()
-      }}></Wallet>
+
       <header className="App-header">
         <h2>
           sCrypt dapp tic-tac-toe
@@ -244,6 +243,9 @@ function App() {
 
         <Game game={game} contractInstance={contractInstance} />
 
+        <Wallet updateWallet={() => {
+          forceUpdate()
+        }}></Wallet>
       </header>
     </div >
   );

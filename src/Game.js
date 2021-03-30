@@ -110,8 +110,8 @@ class Game extends React.Component {
     } else if (player === "bob" && !this.state.xIsNext) {
 
     } else {
-      alert(`now is ${this.state.xIsNext ? 'alice' : 'bob'} turn `)
-      console.error(`now is ${this.state.xIsNext ? 'alice' : 'bob'} turn , but got ${player}`)
+      alert(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn `)
+      console.error(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn , but got ${player}`)
       return;
     }
 
@@ -255,9 +255,10 @@ class Game extends React.Component {
       bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
     }
 
-
+    let player = server.getIdentity();
     if (winner) {
-      status = `Winner ${winner.label === 'X' ? 'Alice' : 'Bob'}`;
+      let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
+      status = `Winner is ${winnerName.toUpperCase() === player.toUpperCase() ? 'Your' : winnerName}`;
       if (game && game.lastUtxo) {
         end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
@@ -267,7 +268,10 @@ class Game extends React.Component {
         end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
-      status = `Next player: ${this.state.xIsNext ? 'Alice' : 'Bob'}`;
+
+      let nexter = this.state.xIsNext ? 'Alice' : 'Bob';
+
+      status = `Next player: ${nexter.toUpperCase() === player.toUpperCase() ? 'Your' : nexter}`;
     }
 
     return (

@@ -23,8 +23,14 @@ function TitleBar(prop) {
 
         if (!web3.wallet) {
             alert("Pelease create wallet first")
+            return;
         }
         let amount = parseInt(amountRef.current.value);
+
+        if (amount < 10000) {
+            alert("The bet fund is too small to play, at least 10000")
+            return;
+        }
 
         if (!isNaN(amount)) {
             prop.startBet(amount);
@@ -51,7 +57,7 @@ function TitleBar(prop) {
         return (
             <div>
                 The game is in progress ...
-                <button className="pure-button cancel" onClick={onCancel}>Cancel</button>
+                <button className="pure-button cancel" onClick={onCancel}>Restart</button>
             </div>
         );
     }
@@ -60,7 +66,7 @@ function TitleBar(prop) {
             <div>
                 Waiting  Bob join the game ...
                 <a className="pure-button" href={window.location.href + '?player=bob'} target="_blank"> Join</a>
-                <button className="pure-button cancel" onClick={onCancel}>Cancel</button>
+                <button className="pure-button cancel" onClick={onCancel}>Restart</button>
             </div>
         );
 
@@ -76,7 +82,7 @@ function TitleBar(prop) {
         return (
             <div>
                 <label>Bet amount:
-                    <input ref={amountRef} type="text" name="amount" />
+                    <input ref={amountRef} type="number" name="amount" placeholder="in satoshis" />
                 </label>
                 <button className="start" onClick={onStart}>Start Bet</button>
             </div>

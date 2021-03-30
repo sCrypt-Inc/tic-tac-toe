@@ -79,13 +79,6 @@ class Server extends EventEmitter {
         return window.localStorage.setItem('game', JSON.stringify(game));
     }
 
-
-    JoinGame = (game) => {
-        game.event = 'JoinGame';
-        console.log('JoinGame', game);
-        window.localStorage.setItem('game', JSON.stringify(game));
-    }
-
     saveGame = (game, event) => {
         game.event = event;
         console.log('saveGame', game);

@@ -80,7 +80,7 @@ const Wallet = props => {
                 </div>
             </div>
             <div className="walletqrcode">
-                <QRCode value={address}></QRCode>
+                <QRCode value={address} ></QRCode>
             </div>
 
         </div>
