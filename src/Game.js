@@ -92,6 +92,10 @@ class Game extends React.Component {
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
+
+    if (calculateWinner(squares).winner || squares[i]) {
+      return;
+    }
     squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
 
     if (server.getIdentity() !== "alice" && this.state.xIsNext) {
@@ -119,19 +123,58 @@ class Game extends React.Component {
 
     let newLockingScript = "";
     let winner = calculateWinner(squares).winner;
+    const FEE = 2000;
+    let outputs = [];
+    let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
-      // winner is alice
+      // winner is current player
 
       let address = await web3.wallet.changeAddress();
 
-      newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex()
+      newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
+
+      outputs.push({
+        satoshis: amount,
+        script: newLockingScript
+      })
+
+    } else if (history.length >= 9) {
+
+      const aliceAddress = new bsv.PublicKey(this.props.game.alicePubKey, {
+        network: bsv.Networks.testnet
+      });
+      const bobAddress = new bsv.PublicKey(this.props.game.bobPubKey, {
+        network: bsv.Networks.testnet
+      });
+
+      console.log('aliceAddress=' + aliceAddress.toAddress(bsv.Networks.testnet))
+      console.log('bobAddress=' + bobAddress.toAddress(bsv.Networks.testnet))
+      //no body win
+      const aliceLockingScript = bsv.Script.buildPublicKeyHashOut(aliceAddress.toAddress(bsv.Networks.testnet)).toHex();
+      const bobLockingScript = bsv.Script.buildPublicKeyHashOut(bobAddress.toAddress(bsv.Networks.testnet)).toHex();
+      amount = (this.props.game.lastUtxo.satoshis - FEE) / 2;
+
+      outputs.push({
+        satoshis: amount,
+        script: aliceLockingScript
+      })
+
+      outputs.push({
+        satoshis: amount,
+        script: bobLockingScript
+      })
 
     } else {
+      //next
       newLockingScript = [this.props.contractInstance.codePart.toHex(), bsv.Script.fromASM(newState).toHex()].join('');
+      outputs.push({
+        satoshis: amount,
+        script: newLockingScript
+      })
     }
 
 
-    const FEE = 2000;
+
 
     let tx = {
       inputs: [{
@@ -139,10 +182,7 @@ class Game extends React.Component {
         sequence: 0,
         script: ""
       }],
-      outputs: [{
-        satoshis: this.props.game.lastUtxo.satoshis - FEE,
-        script: newLockingScript
-      }]
+      outputs: outputs
     }
 
 
@@ -150,7 +190,7 @@ class Game extends React.Component {
 
     web3.wallet.signTx(tx, 0, SignType.ALL, true).then(sig => {
 
-      let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), this.props.game.lastUtxo.satoshis - FEE, preimage).toHex();
+      let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
       tx.inputs[0].script = unlockScript;
 
