@@ -91,15 +91,14 @@ export abstract class wallet {
   abstract balance(): Promise<number>;
 
 
-  abstract signTx(tx: Tx,
-    inputIndex: number,
-    sigHashType: SignType,
+  abstract signTx(tx: Tx, inputIndex: number, sigHashType: SignType,
     onlySig?: boolean,
   ): Promise<string>;
 
   abstract sendTx(rawTx: string): Promise<string>;
 
-  abstract queryUtxos(minAmount: number, options?: {
+  //Returns array of unspent transaction outputs
+  abstract listunspent(minAmount: number, options?: {
     purpose?: string
   }): Promise<UTXO[]>;
 

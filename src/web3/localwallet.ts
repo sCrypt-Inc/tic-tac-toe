@@ -62,7 +62,7 @@ export class LocalWallet extends wallet {
     return txid;
   }
 
-  async queryUtxos(minAmount: number, options?: { purpose?: string; }): Promise<UTXO[]> {
+  async listunspent(minAmount: number, options?: { purpose?: string; }): Promise<UTXO[]> {
     return axios.get(`${this.API_PREFIX}/address/${this.privKey.toAddress()}/unspent`, {
       timeout: 10000
     }).then(res => {

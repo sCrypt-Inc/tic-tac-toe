@@ -57,7 +57,7 @@ export class web3 {
   static async appendPayInput(tx: Tx, payAmount: number): Promise<Tx> {
     const changeAddress = await web3.wallet.changeAddress();
 
-    return web3.wallet.queryUtxos(payAmount + FEE, {
+    return web3.wallet.listunspent(payAmount + FEE, {
       purpose: 'change'
     }).then(async (utxos: UTXO[]) => {
 
@@ -93,7 +93,7 @@ export class web3 {
 
   static async buildUnsignDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
     const changeAddress = await web3.wallet.changeAddress();
-    return web3.wallet.queryUtxos(amountInContract + FEE, {
+    return web3.wallet.listunspent(amountInContract + FEE, {
       purpose: 'change'
     }).then(async (utxos: UTXO[]) => {
       if (utxos.length === 0) {
