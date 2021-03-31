@@ -2,7 +2,9 @@ import './App.css';
 import Game from './Game';
 import React, { useState, useEffect } from 'react';
 import TitleBar from './TitleBar';
-import { web3, LocalWallet, NetWork, Bytes, PubKey, toHex, SignType, Input, newCall } from 'scryptlib';
+import { Bytes, PubKey, toHex, newCall } from 'scryptlib';
+
+import { web3, SignType } from './web3';
 import Wallet from './wallet';
 
 import server from './Server';

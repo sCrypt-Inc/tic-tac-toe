@@ -1,6 +1,8 @@
 import React from 'react';
 import Board from './Board';
-import { web3, bsv, PubKey, toHex, Input, Bytes, Sig, SignType, getPreimage, wallet } from 'scryptlib';
+import { bsv, Bytes, Sig, toHex } from 'scryptlib';
+import { web3, Input, SignType } from './web3';
+
 import server from './Server';
 
 
@@ -55,9 +57,6 @@ const initialState = {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-
-
-    console.log('Game constructor', props.game)
 
     if (props.game && props.game.gameState) {
       this.state = props.game.gameState;
@@ -228,6 +227,11 @@ class Game extends React.Component {
 
         this.setState(gameState);
 
+      }).catch(e => {
+        if (e.response) {
+          alert('sendTx errror: ' + e.response.data)
+        }
+        console.error('sendTx errror', e.response)
       })
     })
 

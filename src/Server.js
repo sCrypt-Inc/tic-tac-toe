@@ -1,6 +1,4 @@
 
-import { web3 } from 'scryptlib';
-import sha1 from 'js-sha1';
 import { EventEmitter } from 'events';
 
 class Server extends EventEmitter {

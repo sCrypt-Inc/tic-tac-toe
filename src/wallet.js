@@ -1,8 +1,8 @@
 
 import * as QRCode from 'qrcode.react';
-import { web3, LocalWallet, NetWork, bsv } from 'scryptlib';
+import { bsv } from 'scryptlib';
 import React, { useState, useEffect } from 'react';
-
+import { web3, LocalWallet, NetWork } from './web3';
 import { useInterval, forceUpdate } from './hooks';
 import server from './Server';
 

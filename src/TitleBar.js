@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { web3, LocalWallet, NetWork, bsv, PubKey, toHex, Tx, SignType } from 'scryptlib';
+
+import { web3 } from './web3';
 import server from './Server';
 
 function makeid(length) {
