@@ -65,7 +65,7 @@ function TitleBar(prop) {
     else if (server.existGamebySelf()) {
         return (
             <div>
-                Waiting  Bob join the game ...
+                Waiting someone join the game ...
                 <a className="pure-button" href={window.location.href + '?player=bob'} target="_blank"> Join</a>
                 <button className="pure-button cancel" onClick={onCancel}>Restart</button>
             </div>

@@ -203,6 +203,7 @@ class Game extends React.Component {
       web3.sendTx(tx).then(txid => {
 
         squares[i].tx = txid;
+        squares[i].n = history.length;
         let gameState = {
           history: history.concat([
             {
@@ -253,6 +254,14 @@ class Game extends React.Component {
     let status;
     let end;
 
+    let icon;
+
+
+    if (server.getIdentity() === 'bob') {
+      icon = <div className="bob">Bob<img src="/tic-tac-toe/bob.png"></img></div>
+    } else {
+      icon = <div className="alice">Alice<img src="/tic-tac-toe/alice.jpg"></img></div>
+    }
 
     let bet;
     if (game && game.deploy) {
@@ -262,7 +271,7 @@ class Game extends React.Component {
     let player = server.getIdentity();
     if (winner) {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
-      status = `Winner is ${winnerName.toUpperCase() === player.toUpperCase() ? 'Your' : winnerName}`;
+      status = `Winner is ${winnerName}`;
       if (game && game.lastUtxo) {
         end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
@@ -275,14 +284,17 @@ class Game extends React.Component {
 
       let nexter = this.state.xIsNext ? 'Alice' : 'Bob';
 
-      status = `Next player: ${nexter.toUpperCase() === player.toUpperCase() ? 'Your' : nexter}`;
+      status = `Next player: ${nexter}`;
     }
 
     return (
       <div className="game">
         <div className="game-board">
 
-          <div className="game-status"> {status} </div>
+          <div className="game-title">
+            {icon}
+            <div className="game-status"> {status} </div>
+          </div>
 
           <Board
             squares={current.squares}
@@ -290,7 +302,7 @@ class Game extends React.Component {
             onClick={i => this.handleClick(i)}
           />
 
-          <div className="game-title">
+          <div className="game-bottom">
             {bet}
             {end}
           </div>
