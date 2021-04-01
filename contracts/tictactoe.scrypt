@@ -36,19 +36,16 @@ contract TicTacToe {
         bytes outputs = b'';
         if (this.won(board, play)) {
             // winner takes all
-            Ripemd160 playerPKH = ripemd160(sha256(player));
-            bytes outputScript = Util.buildPublicKeyHashScript(playerPKH);
+            bytes outputScript = Util.pubKeyToP2PKH(player);
             bytes output = Util.buildOutput(outputScript, amount);
             outputs = output;
         }
         else if (this.full(board)) {
             // draw: equally split, i.e., both outputs have the same amount
-            Ripemd160 alicePKH = ripemd160(sha256(this.alice));
-            bytes aliceScript = Util.buildPublicKeyHashScript(alicePKH);
+            bytes aliceScript = Util.pubKeyToP2PKH(this.alice);
             bytes aliceOutput = Util.buildOutput(aliceScript, amount);
 
-            Ripemd160 bobPKH = ripemd160(sha256(this.bob));
-            bytes bobScript = Util.buildPublicKeyHashScript(bobPKH);
+            bytes bobScript = Util.pubKeyToP2PKH(this.bob);
             bytes bobOutput = Util.buildOutput(bobScript, amount);
 
             outputs = aliceOutput + bobOutput;
