@@ -31,8 +31,6 @@ function App() {
 
     if (web3.wallet) {
 
-      //let tx = await web3.buildUnsignDeployTx(contractInstance, 10000);
-
       let balance = await web3.wallet.getbalance();
 
       if (amount > balance) {
@@ -70,15 +68,12 @@ function App() {
 
   const onBobJoin = async (game) => {
 
-
-    console.log('onBobJoin', game)
-
-
     if (game.creator === "alice" && server.getIdentity() === "alice") {
 
-      let tx = await web3.appendPayInput(game.tx, game.amount);
-      game.tx = tx;
+      fetchContract(game.alicePubKey, game.bobPubKey)
 
+      let tx = await web3.appendPayInputAndSign(game.tx, game.amount);
+      game.tx = tx;
 
       server.saveGame(game, 'AliceSign');
 
@@ -89,11 +84,10 @@ function App() {
 
 
   const onAliceSign = async (game) => {
-    //Alice SIGN
+    //after Alice sign, Bob sign
 
     if (game.creator === "alice" && server.getIdentity() === "bob") {
 
-      console.log('onAliceSign', game)
       let sig = await web3.wallet.signRawTransaction(game.tx, 0, SignType.ALL);
       game.tx.inputs[0].script = sig;
       web3.sendTx(game.tx).then((txid => {
@@ -119,7 +113,6 @@ function App() {
     if (game.creator === "alice" && server.getIdentity() === "alice") {
       console.log('onDeployed', game)
 
-      fetchContract(game)
       updateStart(true)
     } else {
       console.warn('onDeployed but not receive by Alice', game)
@@ -134,21 +127,18 @@ function App() {
   }
 
 
-  async function fetchContract(game) {
+  async function fetchContract(alicePubKey, bobPubKey) {
 
-
-    if (contractInstance === null && game && game.bobPubKey && game.alicePubKey) {
+    if (contractInstance === null && alicePubKey && bobPubKey) {
       let {
         contractClass: TictactoeContractClass
       } = await web3.loadContract("/tic-tac-toe/tictactoe_desc.json");
 
-      let c = newCall(TictactoeContractClass, [new PubKey(toHex(game.alicePubKey)), new PubKey(toHex(game.bobPubKey))])
-      c.setDataPart(game.state ? game.state : '00000000000000000000');
-      console.log('fetchContract', c)
+      let c = newCall(TictactoeContractClass, [new PubKey(toHex(alicePubKey)), new PubKey(toHex(bobPubKey))])
+      c.setDataPart('00000000000000000000');
       updateContractInstance(c);
       return c;
     }
-    console.log('fetchContract null')
     return contractInstance
   }
 
@@ -180,9 +170,8 @@ function App() {
       })
 
 
-      let c = await fetchContract(game);
+      let c = await fetchContract(game.alicePubKey, game.bobPubKey);
 
-      console.log('bobJoin fetchContract', c)
       if (c != null) {
         web3.buildUnsignDeployTx(c, game.amount).then(tx => {
           tx.outputs[0].satoshis = game.amount * 2;
@@ -207,12 +196,7 @@ function App() {
         setTimeout(() => {
           alert('Please create your wallet and fund it');
         }, 1000)
-
       }
-
-
-    } else {
-      fetchContract(game);
     }
 
 
@@ -245,9 +229,7 @@ function App() {
 
         <Game game={game} contractInstance={contractInstance} />
 
-        <Wallet updateWallet={() => {
-          forceUpdate()
-        }}></Wallet>
+        <Wallet ></Wallet>
       </header>
     </div >
   );

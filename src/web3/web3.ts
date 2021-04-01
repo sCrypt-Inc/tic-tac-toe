@@ -54,7 +54,7 @@ export class web3 {
 
 
 
-  static async appendPayInput(tx: Tx, payAmount: number): Promise<Tx> {
+  static async appendPayInputAndSign(tx: Tx, payAmount: number): Promise<Tx> {
     const changeAddress = await web3.wallet.getRawChangeAddress();
 
     return web3.wallet.listUnspent(payAmount + FEE, {
