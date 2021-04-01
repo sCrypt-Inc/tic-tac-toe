@@ -23,7 +23,9 @@ const Wallet = props => {
             })
         } else if (server.getPrivateKey()) {
             web3.setWallet(new LocalWallet(NetWork.Testnet, server.getPrivateKey()));
-            props.updateWallet()
+            web3.wallet.getRawChangeAddress().then(address => {
+                setAddress(address)
+            })
         }
     });
 
@@ -50,10 +52,10 @@ const Wallet = props => {
         try {
             const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 
+            setAddress(privateKey.toAddress() + '')
             web3.setWallet(new LocalWallet(NetWork.Testnet, privateKey.toWIF()));
 
             server.savePrivateKey(privateKey.toWIF());
-            props.updateWallet();
         } catch (e) {
             console.log('wallet onChange error', e)
         }
