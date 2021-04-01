@@ -58,30 +58,34 @@ export abstract class wallet {
     this.network = network;
   }
 
-
+  //Dapp use this api to connect to the wallet.
   abstract requestAccount(name: string, permissions: string[]): Promise<Account>;
 
+  //get wallet balance
   abstract getbalance(): Promise<number>;
 
-
-  abstract signRawTransaction(tx: Tx, inputIndex: number, sigHashType: SignType,
-    onlySig?: boolean,
+  //sign raw transaction, returns unlockscript of the p2pkh input if success
+  abstract signRawTransaction(tx: Tx, inputIndex: number, sigHashType: SignType
   ): Promise<string>;
 
+  //get signature for special input
   abstract getSignature(tx: Tx, inputIndex: number, sigHashType: SignType
   ): Promise<string>;
 
+  //send raw transaction, returns transaction hash if success
   abstract sendRawTransaction(rawTx: string): Promise<string>;
 
-  //Returns array of unspent transaction outputs
-  abstract listunspent(minAmount: number, options?: {
+  //returns array of unspent transaction outputs, which total amount is more than the minAmount argument.
+  abstract listUnspent(minAmount: number, options?: {
     purpose?: string
   }): Promise<UTXO[]>;
 
+  //returns a new Bitcoin address, for receiving change.
   abstract getRawChangeAddress(options?: {
     purpose?: string
   }): Promise<string>;
 
+  //returns a public key
   abstract getPublicKey(options?: {
     purpose?: string
   }): Promise<string>;
