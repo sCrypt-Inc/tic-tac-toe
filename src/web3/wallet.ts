@@ -59,54 +59,30 @@ export abstract class wallet {
   }
 
 
-  static toBsvTx(tx: Tx) {
-    const tx_ = new bsv.Transaction();
-
-    tx.inputs.forEach(input => {
-      tx_.addInput(new bsv.Transaction.Input({
-        prevTxId: input.utxo.txHash,
-        outputIndex: input.utxo.outputIndex,
-        script: input.script ? bsv.Script.fromHex(input.script) : new bsv.Script(),
-      }), bsv.Script.fromHex(input.utxo.script), input.utxo.satoshis);
-    });
-
-
-    tx.outputs.forEach(output => {
-      tx_.addOutput(new bsv.Transaction.Output({
-        script: bsv.Script.fromHex(output.script),
-        satoshis: output.satoshis,
-      }));
-    });
-
-    return tx_;
-  }
-
-  static toHexBsvTx(tx: Tx) {
-    return wallet.toBsvTx(tx).toString();
-  }
-
-
   abstract requestAccount(name: string, permissions: string[]): Promise<Account>;
 
-  abstract balance(): Promise<number>;
+  abstract getbalance(): Promise<number>;
 
 
-  abstract signTx(tx: Tx, inputIndex: number, sigHashType: SignType,
+  abstract signRawTransaction(tx: Tx, inputIndex: number, sigHashType: SignType,
     onlySig?: boolean,
   ): Promise<string>;
 
-  abstract sendTx(rawTx: string): Promise<string>;
+  abstract getSignature(tx: Tx, inputIndex: number, sigHashType: SignType
+  ): Promise<string>;
+
+  abstract sendRawTransaction(rawTx: string): Promise<string>;
 
   //Returns array of unspent transaction outputs
   abstract listunspent(minAmount: number, options?: {
     purpose?: string
   }): Promise<UTXO[]>;
 
-  abstract changeAddress(options?: {
+  abstract getRawChangeAddress(options?: {
     purpose?: string
   }): Promise<string>;
 
-  abstract publicKey(options?: {
+  abstract getPublicKey(options?: {
     purpose?: string
   }): Promise<string>;
 

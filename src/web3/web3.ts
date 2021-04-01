@@ -4,6 +4,7 @@ import { } from 'scryptlib';
 import { Output, UTXO, wallet, Tx, Input, SignType } from './wallet';
 import axios from 'axios';
 import { AbstractContract } from 'scryptlib/dist/contract';
+import { toRawTx } from './wutils';
 const WEB3_VERSION = '0.0.1';
 
 const FEE = 2000;
@@ -45,7 +46,7 @@ export class web3 {
   static async buildDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
 
     return web3.buildUnsignDeployTx(contract, amountInContract).then(async (tx: Tx) => {
-      const sig = await web3.wallet.signTx(tx, 0, SignType.ALL);
+      const sig = await web3.wallet.signRawTransaction(tx, 0, SignType.ALL);
       tx.inputs[0].script = sig;
       return tx;
     });
@@ -54,7 +55,7 @@ export class web3 {
 
 
   static async appendPayInput(tx: Tx, payAmount: number): Promise<Tx> {
-    const changeAddress = await web3.wallet.changeAddress();
+    const changeAddress = await web3.wallet.getRawChangeAddress();
 
     return web3.wallet.listunspent(payAmount + FEE, {
       purpose: 'change'
@@ -82,7 +83,7 @@ export class web3 {
         }
       );
 
-      const sig = await web3.wallet.signTx(tx, inputIndex, SignType.ALL);
+      const sig = await web3.wallet.signRawTransaction(tx, inputIndex, SignType.ALL);
       tx.inputs[inputIndex].script = sig;
       return tx;
     });
@@ -91,7 +92,7 @@ export class web3 {
 
 
   static async buildUnsignDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
-    const changeAddress = await web3.wallet.changeAddress();
+    const changeAddress = await web3.wallet.getRawChangeAddress();
     return web3.wallet.listunspent(amountInContract + FEE, {
       purpose: 'change'
     }).then(async (utxos: UTXO[]) => {
@@ -127,19 +128,12 @@ export class web3 {
   }
 
 
-
-  static getPreimage(tx: Tx, inputIndex = 0, sigHashType: SignType = SignType.ALL): SigHashPreimage {
-    const bsvTx = wallet.toBsvTx(tx);
-    return getPreimage(bsvTx, bsv.Script.fromHex(tx.inputs[inputIndex].utxo.script).toASM(), tx.inputs[inputIndex].utxo.satoshis, inputIndex, sigHashType);
-  }
-
-
   static async sendRawTx(rawTx: string): Promise<string> {
-    return web3.wallet.sendTx(rawTx);
+    return web3.wallet.sendRawTransaction(rawTx);
   }
 
   static async sendTx(tx: Tx): Promise<string> {
-    return web3.wallet.sendTx(wallet.toHexBsvTx(tx));
+    return web3.wallet.sendRawTransaction(toRawTx(tx));
   }
 
 

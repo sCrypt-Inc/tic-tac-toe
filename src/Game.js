@@ -4,6 +4,7 @@ import { bsv, Bytes, Sig, toHex } from 'scryptlib';
 import { web3, Input, SignType } from './web3';
 
 import server from './Server';
+import { getPreimage } from './web3/wutils';
 
 
 const calculateWinner = (squares) => {
@@ -135,7 +136,7 @@ class Game extends React.Component {
     if (winner) {
       // winner is current player
 
-      let address = await web3.wallet.changeAddress();
+      let address = await web3.wallet.getRawChangeAddress();
 
       newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
 
@@ -190,9 +191,9 @@ class Game extends React.Component {
     }
 
 
-    let preimage = web3.getPreimage(tx);
+    let preimage = getPreimage(tx);
 
-    web3.wallet.signTx(tx, 0, SignType.ALL, true).then(sig => {
+    web3.wallet.getSignature(tx, 0, SignType.ALL, true).then(sig => {
 
       let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 

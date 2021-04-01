@@ -14,11 +14,11 @@ const Wallet = props => {
     useEffect(() => {
 
         if (web3.wallet) {
-            web3.wallet.changeAddress().then(address => {
+            web3.wallet.getRawChangeAddress().then(address => {
                 setAddress(address)
             })
 
-            web3.wallet.balance().then(balance => {
+            web3.wallet.getbalance().then(balance => {
                 setBalance(balance)
             })
         } else if (server.getPrivateKey()) {
@@ -31,7 +31,7 @@ const Wallet = props => {
     useInterval(() => {
 
         if (web3.wallet) {
-            web3.wallet.balance().then(b => {
+            web3.wallet.getbalance().then(b => {
                 console.log(`update balance old: ${balance} new: ${b}`)
 
                 if (balance === 0 && b > 0) {

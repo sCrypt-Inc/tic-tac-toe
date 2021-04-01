@@ -1,6 +1,6 @@
 import { Account, NetWork, UTXO, wallet, Tx, SignType } from './wallet';
 import { toHex, bsv, signTx } from 'scryptlib';
-import { signInput } from './wutils';
+import { signInput, toBsvTx } from './wutils';
 import axios from 'axios';
 
 
@@ -18,7 +18,7 @@ export class LocalWallet extends wallet {
     throw new Error('Method not implemented.');
   }
 
-  async balance(): Promise<number> {
+  async getbalance(): Promise<number> {
 
     const {
       data: balance
@@ -29,24 +29,33 @@ export class LocalWallet extends wallet {
     return balance.confirmed + balance.unconfirmed;
   }
 
-  async signTx(tx: Tx,
+  async signRawTransaction(tx: Tx,
     inputIndex: number,
-    sigHashType: SignType,
-    onlySig = false
+    sigHashType: SignType
   ): Promise<string> {
 
 
-    const tx_ = wallet.toBsvTx(tx);
+    const tx_ = toBsvTx(tx);
 
     const utxo = tx.inputs[inputIndex].utxo;
 
-    if (onlySig) {
-      return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
-    }
     return signInput(this.privKey, tx_, inputIndex, sigHashType, utxo);
   }
 
-  async sendTx(rawTx: string): Promise<string> {
+
+  async getSignature(tx: Tx,
+    inputIndex: number,
+    sigHashType: SignType
+  ): Promise<string> {
+
+
+    const tx_ = toBsvTx(tx);
+
+    return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
+
+  }
+
+  async sendRawTransaction(rawTx: string): Promise<string> {
 
     // 1 second per KB
 
@@ -78,13 +87,13 @@ export class LocalWallet extends wallet {
   }
 
 
-  changeAddress(options?: { purpose?: string; }): Promise<string> {
+  getRawChangeAddress(options?: { purpose?: string; }): Promise<string> {
 
     return new Promise(resolve => resolve(this.privKey.toAddress() + ''));
   }
 
 
-  publicKey(options?: { purpose?: string; }): Promise<string> {
+  getPublicKey(options?: { purpose?: string; }): Promise<string> {
 
     return new Promise(resolve => resolve(toHex(this.privKey.publicKey)));
   }

@@ -33,14 +33,14 @@ function App() {
 
       //let tx = await web3.buildUnsignDeployTx(contractInstance, 10000);
 
-      let balance = await web3.wallet.balance();
+      let balance = await web3.wallet.getbalance();
 
       if (amount > balance) {
         alert('Please fund your wallet address first')
         return
       }
 
-      let alicePubKey = await web3.wallet.publicKey();
+      let alicePubKey = await web3.wallet.getPublicKey();
 
 
       server.createGame({
@@ -94,7 +94,7 @@ function App() {
     if (game.creator === "alice" && server.getIdentity() === "bob") {
 
       console.log('onAliceSign', game)
-      let sig = await web3.wallet.signTx(game.tx, 0, SignType.ALL);
+      let sig = await web3.wallet.signRawTransaction(game.tx, 0, SignType.ALL);
       game.tx.inputs[0].script = sig;
       web3.sendTx(game.tx).then((txid => {
         game.lastUtxo = {
@@ -164,9 +164,9 @@ function App() {
 
     async function bobJoin(game) {
 
-      let bobPubKey = await web3.wallet.publicKey();
+      let bobPubKey = await web3.wallet.getPublicKey();
 
-      let balance = await web3.wallet.balance();
+      let balance = await web3.wallet.getbalance();
 
 
       if (balance <= game.amount) {
