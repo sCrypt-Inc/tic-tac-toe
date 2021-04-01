@@ -6,8 +6,7 @@ import axios from 'axios';
 import { AbstractContract } from 'scryptlib/dist/contract';
 const WEB3_VERSION = '0.0.1';
 
-const FEE_PER_KB = 500;
-const FEE = 1000;
+const FEE = 2000;
 
 export class web3 {
 

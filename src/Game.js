@@ -129,7 +129,7 @@ class Game extends React.Component {
 
     let newLockingScript = "";
     let winner = calculateWinner(squares).winner;
-    const FEE = 2000;
+    const FEE = 3000;
     let outputs = [];
     let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
@@ -153,8 +153,6 @@ class Game extends React.Component {
         network: bsv.Networks.testnet
       });
 
-      console.log('aliceAddress=' + aliceAddress.toAddress(bsv.Networks.testnet))
-      console.log('bobAddress=' + bobAddress.toAddress(bsv.Networks.testnet))
       //no body win
       const aliceLockingScript = bsv.Script.buildPublicKeyHashOut(aliceAddress.toAddress(bsv.Networks.testnet)).toHex();
       const bobLockingScript = bsv.Script.buildPublicKeyHashOut(bobAddress.toAddress(bsv.Networks.testnet)).toHex();

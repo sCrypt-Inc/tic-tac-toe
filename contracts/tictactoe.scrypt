@@ -51,7 +51,7 @@ contract TicTacToe {
             outputs = aliceOutput + bobOutput;
         } else {
             // update state: next turn & next board
-            bytes scriptCode_ = scriptCode[ : scriptLen - BOARDLEN - TURNLEN ] + num2bin(1 - turn, TURNLEN) + board;
+            bytes scriptCode_ = scriptCode[ : scriptLen - BOARDLEN - TURNLEN] + num2bin(1 - turn, TURNLEN) + board;
             bytes output = Util.buildOutput(scriptCode_, amount);
             outputs = output;
         }
@@ -63,14 +63,14 @@ contract TicTacToe {
     function won(bytes board, bytes play) : bool {
         // three in a row, a column, or a diagnoal
         int[8][3] lines = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
         ];
 
         bool anyLine = false;

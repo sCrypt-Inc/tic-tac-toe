@@ -239,7 +239,7 @@ function App() {
 
       <header className="App-header">
         <h2>
-          sCrypt dapp tic-tac-toe
+          Play Tic-Tac-Toe on Bitcoin
         </h2>
         <TitleBar startBet={startBet} cancelBet={cancelBet} started={started} game={game} />
 
