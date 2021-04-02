@@ -28,8 +28,8 @@ function TitleBar(props) {
         }
         let amount = parseInt(amountRef.current.value);
 
-        if (amount < 10000) {
-            alert("The bet fund is too small to play, at least 10000")
+        if (amount < 20000) {
+            alert("The bet fund is too small to play, at least 20000")
             return;
         }
 

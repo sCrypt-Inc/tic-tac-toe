@@ -30,7 +30,7 @@ function App() {
 
       if (amount > balance) {
         alert('Please fund your wallet address first')
-        return
+        return;
       }
 
       let publicKey = await web3.wallet.getPublicKey();
@@ -190,6 +190,13 @@ function App() {
       if (game && game.alicePubKey && game.bobPubKey) {
         fetchContract(game.alicePubKey, game.bobPubKey)
       }
+
+      let alicePrivateKey = server.getAlicePrivateKey();
+      let bobPrivateKey = server.getBobPrivateKey();
+      if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
+        joinGame(game, alicePrivateKey, bobPrivateKey)
+      }
+
     }
 
 
@@ -202,22 +209,6 @@ function App() {
     }
 
   }, [contractInstance]);
-
-
-  useInterval(() => {
-    let game = server.getGame();
-
-    let alicePrivateKey = server.getAlicePrivateKey();
-
-    let bobPrivateKey = server.getBobPrivateKey();
-
-
-    if (web3.wallet && game && !game.deploy && server.getBobPrivateKey() && server.getAlicePrivateKey()) {
-      joinGame(game, alicePrivateKey, bobPrivateKey)
-    }
-
-  }, 5000);
-
 
 
 

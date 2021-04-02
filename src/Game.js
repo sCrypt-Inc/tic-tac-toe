@@ -78,46 +78,8 @@ class Game extends React.Component {
   }
 
 
-  async componentDidMount() {
-    console.log('componentDidMount', this.props)
-
-
-  }
-
-  componentWillUnmount() {
-
-  }
-
-
-  async handleClick(i) {
-
-    if (!this.props.game || !this.props.game.lastUtxo) {
-      console.error("handleClick error", this.props.game)
-      return;
-    }
-    const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
-    const current = history[history.length - 1];
-    const squares = current.squares.slice();
-
-    if (calculateWinner(squares).winner || squares[i]) {
-      return;
-    }
-    squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
-    let player = server.getCurrentPlayer();
-
-    if (player === "alice" && this.state.xIsNext) {
-
-    } else if (player === "bob" && !this.state.xIsNext) {
-
-    } else {
-      alert(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn `)
-      console.error(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn , but got ${player}`)
-      return;
-    }
-
-
-
-    let newState = (!this.state.xIsNext ? '00' : '01') + squares.map(square => {
+  calculateNewState(squares) {
+    return (!this.state.xIsNext ? '00' : '01') + squares.map(square => {
 
       if (square && square.label === 'X') {
         return '01'
@@ -127,7 +89,33 @@ class Game extends React.Component {
         return '00';
       }
     }).join('');
+  }
 
+
+  checkIfValid(i, squares) {
+    if (!this.props.game || !this.props.game.lastUtxo) {
+      return false;
+    }
+
+    if (calculateWinner(squares).winner || squares[i]) {
+      return false;
+    }
+    squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
+    let player = server.getCurrentPlayer();
+
+    if (player === "alice" && this.state.xIsNext) {
+      return true;
+    } else if (player === "bob" && !this.state.xIsNext) {
+      return true;
+    } else {
+      alert(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn `)
+      console.error(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn , but got ${player}`)
+      return false;
+    }
+  }
+
+
+  async buildCallContractTx(i, newState, squares, history) {
     let newLockingScript = "";
     let winner = calculateWinner(squares).winner;
     const FEE = 3000;
@@ -181,7 +169,7 @@ class Game extends React.Component {
 
     if (outputs[0].satoshis <= 0) {
       alert(`fund in contract is too low `)
-      return;
+      return undefined;
     }
 
 
@@ -194,49 +182,73 @@ class Game extends React.Component {
       outputs: outputs
     }
 
-
     let preimage = getPreimage(tx);
 
-    web3.wallet.getSignature(tx, 0, SignType.ALL, true).then(sig => {
+    let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
 
-      let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
+    let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
-      tx.inputs[0].script = unlockScript;
+    tx.inputs[0].script = unlockScript;
 
-      web3.sendTx(tx).then(txid => {
+    return tx;
+  }
 
-        squares[i].tx = txid;
-        squares[i].n = history.length;
-        let gameState = {
-          history: history.concat([
-            {
-              squares,
-              currentLocation: getLocation(i),
-              stepNumber: history.length,
-            },
-          ]),
-          xIsNext: !this.state.xIsNext,
-          currentStepNumber: history.length,
-        };
 
-        server.saveGame(Object.assign({}, this.props.game, {
-          gameState: gameState,
-          lastUtxo: {
-            txHash: txid,
-            outputIndex: 0,
-            satoshis: tx.outputs[0].satoshis,
-            script: tx.outputs[0].script
-          }
-        }), 'next')
+  async handleClick(i) {
 
-        this.setState(gameState);
 
-      }).catch(e => {
-        if (e.response) {
-          alert('sendTx errror: ' + e.response.data)
+    const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
+    const current = history[history.length - 1];
+    const squares = current.squares.slice();
+
+    if (!this.checkIfValid(i, squares)) {
+      console.error('handleClick checkIfValid false...')
+      return;
+    }
+
+
+    let newState = this.calculateNewState(squares);
+
+    let tx = await this.buildCallContractTx(i, newState, squares, history);
+
+    if (!tx) {
+      console.error('buildCallContractTx fail...')
+      return;
+    }
+
+    web3.sendTx(tx).then(txid => {
+
+      squares[i].tx = txid;
+      squares[i].n = history.length;
+      let gameState = {
+        history: history.concat([
+          {
+            squares,
+            currentLocation: getLocation(i),
+            stepNumber: history.length,
+          },
+        ]),
+        xIsNext: !this.state.xIsNext,
+        currentStepNumber: history.length,
+      };
+
+      server.saveGame(Object.assign({}, this.props.game, {
+        gameState: gameState,
+        lastUtxo: {
+          txHash: txid,
+          outputIndex: 0,
+          satoshis: tx.outputs[0].satoshis,
+          script: tx.outputs[0].script
         }
-        console.error('sendTx errror', e.response)
-      })
+      }), 'next')
+
+      this.setState(gameState);
+
+    }).catch(e => {
+      if (e.response) {
+        alert('sendTx errror: ' + e.response.data)
+      }
+      console.error('sendTx errror', e.response)
     })
 
   }
