@@ -103,7 +103,7 @@ class Game extends React.Component {
       return;
     }
     squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
-    let player = server.getIdentity();
+    let player = server.getCurrentPlayer();
 
     if (player === "alice" && this.state.xIsNext) {
 
@@ -179,6 +179,10 @@ class Game extends React.Component {
     }
 
 
+    if (outputs[0].satoshis <= 0) {
+      alert(`fund in contract is too low `)
+      return;
+    }
 
 
     let tx = {
@@ -256,7 +260,7 @@ class Game extends React.Component {
     let icon;
 
 
-    if (server.getIdentity() === 'bob') {
+    if (server.getCurrentPlayer() === 'bob') {
       icon = <div className="bob">Bob<img src="/tic-tac-toe/bob.png"></img></div>
     } else {
       icon = <div className="alice">Alice<img src="/tic-tac-toe/alice.jpg"></img></div>
@@ -267,7 +271,7 @@ class Game extends React.Component {
       bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
     }
 
-    let player = server.getIdentity();
+    let player = server.getCurrentPlayer();
     if (winner) {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;

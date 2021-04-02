@@ -1,10 +1,11 @@
 import { promises } from 'dns';
 import { buildContractClass, buildTypeClasses, ScryptType, SigHashPreimage, bsv, getPreimage, toHex } from 'scryptlib';
 import { } from 'scryptlib';
-import { Output, UTXO, wallet, Tx, Input, SignType } from './wallet';
+import { Output, UTXO, wallet, Tx, Input, SignType, NetWork } from './wallet';
 import axios from 'axios';
 import { AbstractContract } from 'scryptlib/dist/contract';
 import { toRawTx } from './wutils';
+import { LocalWallet } from './localwallet';
 const WEB3_VERSION = '0.0.1';
 
 const FEE = 2000;
@@ -43,30 +44,35 @@ export class web3 {
 
 
 
-  static async buildDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
+  static async buildDeployTx(contract: AbstractContract, amountInContract: number, alicePrivateKey: string, bobPrivateKey: string): Promise<Tx> {
 
-    return web3.buildUnsignDeployTx(contract, amountInContract).then(async (tx: Tx) => {
-      const sig = await web3.wallet.signRawTransaction(tx, 0, SignType.ALL);
-      tx.inputs[0].script = sig;
-      return tx;
+    let aliceWallet = new LocalWallet(NetWork.Testnet, alicePrivateKey);
+    let bobWallet = new LocalWallet(NetWork.Testnet, bobPrivateKey);
+
+    const aliceChangeAddress = await aliceWallet.getRawChangeAddress();
+    const bobChangeAddress = await bobWallet.getRawChangeAddress();
+
+    const tx: Tx = {
+      inputs: [],
+      outputs: []
+    };
+
+    tx.outputs.push({
+      script: contract.lockingScript.toHex(),
+      satoshis: amountInContract * 2
     });
-  }
 
+    const minAmount = amountInContract + FEE;
 
-
-  static async appendPayInputAndSign(tx: Tx, payAmount: number): Promise<Tx> {
-    const changeAddress = await web3.wallet.getRawChangeAddress();
-
-    return web3.wallet.listUnspent(payAmount + FEE, {
+    return aliceWallet.listUnspent(minAmount, {
       purpose: 'change'
     }).then(async (utxos: UTXO[]) => {
-
 
       if (utxos.length === 0) {
         throw new Error('no utxos');
       }
 
-      const inputIndex = tx.inputs.length;
+      //add input which using utxo from alice
       tx.inputs.push(
         {
           utxo: utxos[0],
@@ -75,56 +81,70 @@ export class web3 {
         }
       );
 
-      const changeAmount = utxos[0].satoshis - payAmount - FEE;
+      const changeAmount = utxos[0].satoshis - amountInContract - FEE;
+
+      if (changeAmount <= 0) {
+        throw new Error('fund is not enough');
+      }
+
+      //add alice change output
+
       tx.outputs.push(
         {
-          script: bsv.Script.buildPublicKeyHashOut(changeAddress).toHex(),
+          script: bsv.Script.buildPublicKeyHashOut(aliceChangeAddress).toHex(),
           satoshis: changeAmount
         }
       );
 
-      const sig = await web3.wallet.signRawTransaction(tx, inputIndex, SignType.ALL);
-      tx.inputs[inputIndex].script = sig;
       return tx;
-    });
-  }
+    }).then(tx => {
+      return bobWallet.listUnspent(minAmount, {
+        purpose: 'change'
+      }).then(async (utxos: UTXO[]) => {
 
+        if (utxos.length === 0) {
+          throw new Error('no utxos');
+        }
 
+        //add input which using utxo from bob
+        tx.inputs.push(
+          {
+            utxo: utxos[0],
+            script: '',
+            sequence: 0
+          }
+        );
 
-  static async buildUnsignDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
-    const changeAddress = await web3.wallet.getRawChangeAddress();
-    return web3.wallet.listUnspent(amountInContract + FEE, {
-      purpose: 'change'
-    }).then(async (utxos: UTXO[]) => {
-      if (utxos.length === 0) {
-        throw new Error('no utxos');
-      }
+        const changeAmount = utxos[0].satoshis - amountInContract - FEE;
 
-      const tx: Tx = {
-        inputs: [],
-        outputs: []
-      };
-      const input: Input = {
-        utxo: utxos[0],
-        sequence: 0,
-        script: ''
-      };
+        if (changeAmount <= 0) {
+          throw new Error('fund is not enough');
+        }
 
-      tx.inputs.push(input);
+        //add bob change output
+        tx.outputs.push(
+          {
+            script: bsv.Script.buildPublicKeyHashOut(bobChangeAddress).toHex(),
+            satoshis: changeAmount
+          }
+        );
 
-      tx.outputs.push({
-        script: contract.lockingScript.toHex(),
-        satoshis: amountInContract
-      });
+        return tx;
 
-      const changeAmount = utxos[0].satoshis - amountInContract - FEE;
-      tx.outputs.push({
-        script: bsv.Script.buildPublicKeyHashOut(changeAddress).toHex(),
-        satoshis: changeAmount
-      });
-
-      return tx;
-    });
+      })
+    }).then(tx => {
+      //alice sign
+      return aliceWallet.signRawTransaction(tx, 0, SignType.ALL).then(unlockscript => {
+        tx.inputs[0].script = unlockscript;
+        return tx;
+      })
+    }).then(tx => {
+      //bob sign
+      return bobWallet.signRawTransaction(tx, 1, SignType.ALL).then(unlockscript => {
+        tx.inputs[1].script = unlockscript;
+        return tx;
+      })
+    })
   }
 
 
@@ -137,14 +157,11 @@ export class web3 {
   }
 
 
-  static async deploy(contract: AbstractContract, amountInContract: number): Promise<string> {
-    return web3.buildDeployTx(contract, amountInContract).then(async tx => {
-      return web3.sendTx(tx);
+  static async deploy(contract: AbstractContract, amountInContract: number, alicePrivateKey: string, bobPrivateKey: string): Promise<[Tx, string]> {
+    return web3.buildDeployTx(contract, amountInContract, alicePrivateKey, bobPrivateKey).then(async tx => {
+      return web3.sendTx(tx).then(txid => {
+        return [tx, txid];
+      })
     });
   }
 }
-
-
-
-
-console.log(`hello, this is scryptlib web3 ${WEB3_VERSION}.`);

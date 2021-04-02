@@ -36,33 +36,6 @@ class Server extends EventEmitter {
 
     }
 
-    existGamebySelf = () => {
-
-        let game = window.localStorage.getItem('game');
-
-        if (game && game !== null) {
-            game = JSON.parse(game);
-            if (game.creator && game.creator === this.player) {
-                return game;
-            }
-        }
-
-        return undefined;
-    }
-
-    existGamebyOther = () => {
-
-        let game = window.localStorage.getItem('game');
-
-        if (game && game !== null) {
-            game = JSON.parse(game);
-            if (game.creator && game.creator !== this.player) {
-                return game;
-            }
-        }
-
-        return undefined;
-    }
 
 
     deleteGame = () => {
@@ -95,7 +68,7 @@ class Server extends EventEmitter {
 
 
 
-    getIdentity = () => (this.player);
+    getCurrentPlayer = () => (this.player);
 
 
     savePrivateKey = (key) => {
@@ -112,27 +85,14 @@ class Server extends EventEmitter {
         return this.privKey;
     }
 
+    getBobPrivateKey = () => {
 
-    addJoinListener(cb) {
-        console.log('addJoinListener');
-        this.on('JoinGame', cb);
+        return window.localStorage.getItem('bob');
     }
 
+    getAlicePrivateKey = () => {
 
-    removeJoinListener(cb) {
-        console.log('removeJoinListener');
-        this.off('JoinGame', cb)
-    }
-
-
-    addAliceSignListener(cb) {
-        console.log('addAliceSignListener');
-        this.on('AliceSign', cb);
-    }
-
-    removeAliceSignListener(cb) {
-        console.log('removeAliceSignListener');
-        this.off('AliceSign', cb)
+        return window.localStorage.getItem('alice');
     }
 
 
