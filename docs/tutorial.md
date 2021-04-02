@@ -133,7 +133,7 @@ contract TicTacToe {
 
 1. `move` 是 唯一的 _public_ 函数，合约在区块链上的状态变化，是通过调用此函数触发的。
 1. `won` 检查当前棋盘状态，有没有玩家已经赢得比赛，如果有人已经赢得比赛，那就将合约锁定的币转移到赢家对应的 PubKey 的地址
-1. `full` 检查当前棋盘 9 个格子是否都走过了，如果已经都走过了，也没人赢，那相当于平局，则两两个人平分赌注
+1. `full` 检查当前棋盘 9 个格子是否都走过了，如果已经都走过了，也没人赢，那相当于平局，则两个人平分赌注
 
 完成合约的编写后，我们可以右键编译合约，将会看到输出 `tictactoe_desc.json` 到`out`中， Dapp 将使用此文件来部署合约到区块链中，如下图：
 
@@ -157,7 +157,7 @@ contract TicTacToe {
 
 接下来，我们将合约编译之后的 `tictactoe_desc.json` 拷贝到 `public` 目录中，以便我们的能从前端页面加载到合约的描述文件。
 
-由于现在没有支持非标脚本的钱包可以用，我们需要先实现一个测试网的钱包。我们将钱包的接口定义在[wallet.ts](../src/web3/wallet.ts) 中, 包括以下接口
+我们需要先实现一个测试网的钱包。我们将钱包的接口定义在[wallet.ts](../src/web3/wallet.ts) 中, 包括以下接口
 
 ```typescript
 
@@ -231,7 +231,7 @@ contract TicTacToe {
      }
     ```
 
-1.  Bob 通过 Alice 提供的连接加入游戏，Bob 得到 Alice publickKey 后，他就能构建合约了，他通过 `fetchContract` 加载合约的描述文件，并使用两个人的 publickey 初始化合约：
+2.  Bob 通过 Alice 提供的连接加入游戏，Bob 得到 Alice publickKey 后，他就能构建合约了，他通过 `fetchContract` 加载合约的描述文件，并使用两个人的 publickey 初始化合约：
 
     ```javascript
     async function fetchContract(alicePubKey, bobPubKey) {
@@ -326,7 +326,7 @@ contract TicTacToe {
      }
     ```
 
-1.  Alice 收到 Bob 加入游戏的事件以及 Bob 提供的未签名的下注交易后，同样调用自己钱包的 `listUnspent` 接口向钱包索要一个可用于下注的 utxo 和一个用于找零的地址， 向 Bob 提供的未签名交易添加了一个用于下注的 Input 和一个用于找零的 Output, 这个时候 Alice 可以开始对交易进行签名了,同时他也可以用 `fetchContract` 初始化合约了。之后她将签名好的交易发送给 Bob.
+3.  Alice 收到 Bob 加入游戏的事件以及 Bob 提供的未签名的下注交易后，同样调用自己钱包的 `listUnspent` 接口向钱包索要一个可用于下注的 utxo 和一个用于找零的地址， 向 Bob 提供的未签名交易添加了一个用于下注的 Input 和一个用于找零的 Output, 这个时候 Alice 可以开始对交易进行签名了,同时他也可以用 `fetchContract` 初始化合约了。之后她将签名好的交易发送给 Bob.
 
     ```javascript
     const onBobJoin = async (game) => {
@@ -345,7 +345,7 @@ contract TicTacToe {
     }
     ```
 
-1.  Bob 收到 Alice 签名好的交易，也可以对交易进行签名了。签名完成后，他调用钱包的 `sendTx` 接口，将交易发生到区块链中。
+4.  Bob 收到 Alice 签名好的交易，也可以对交易进行签名了。签名完成后，他调用钱包的 `sendTx` 接口，将交易发生到区块链中。
 
     ```javascript
     const onAliceSign = async (game) => {
@@ -444,7 +444,7 @@ if (winner) {
   });
 }
 
-// build a transtion
+// build a transation
 
 let tx = {
   inputs: [
