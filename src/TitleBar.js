@@ -15,7 +15,7 @@ function makeid(length) {
 }
 
 
-function TitleBar(prop) {
+function TitleBar(props) {
     const forceUpdate = React.useReducer(bool => !bool)[1];
 
     const amountRef = useRef(null);
@@ -28,32 +28,25 @@ function TitleBar(prop) {
         }
         let amount = parseInt(amountRef.current.value);
 
-        if (amount < 10000) {
-            alert("The bet fund is too small to play, at least 10000")
+        if (amount < 20000) {
+            alert("The bet fund is too small to play, at least 20000")
             return;
         }
 
         if (!isNaN(amount)) {
-            prop.startBet(amount);
+            props.startBet(amount);
         } else {
             console.error(`${amountRef.current.value} is not number`)
         }
     }
 
     const onCancel = (e) => {
-        prop.cancelBet();
+        props.cancelBet();
     }
 
 
 
-
-
-
-    useEffect(() => {
-
-    })
-
-    if (prop.started) {
+    if (props.started) {
 
         return (
             <div>
@@ -62,16 +55,21 @@ function TitleBar(prop) {
             </div>
         );
     }
-    else if (server.existGamebySelf()) {
+    else if (props.game && props.game.creator === server.getCurrentPlayer()) {
+
+        const player = server.getCurrentPlayer() === 'alice' ? 'bob' : 'alice';
+
+        var url = window.location.href.split('?')[0];
+
         return (
             <div>
                 Waiting someone join the game ...
-                <a className="pure-button" href={window.location.href + '?player=bob'} target="_blank"> Join</a>
+                <a className="pure-button" href={url + '?player=' + player} target="_blank"> Join</a>
                 <button className="pure-button cancel" onClick={onCancel}>Restart</button>
             </div>
         );
 
-    } else if (server.existGamebyOther()) {
+    } else if (props.game && props.game.creator !== server.getCurrentPlayer()) {
 
         return (
             <div>

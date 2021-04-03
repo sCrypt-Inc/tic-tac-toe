@@ -7,7 +7,7 @@ import axios from 'axios';
 export class LocalWallet extends wallet {
   API_PREFIX: string;
   privKey: any;
-  constructor(network: NetWork, key?: string) {
+  constructor(network: NetWork, key: string) {
     super(network);
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network == NetWork.Testnet ? 'test' : 'main'}`;
     this.privKey = key ? new bsv.PrivateKey.fromWIF(key) : new bsv.PrivateKey.fromRandom(network);
