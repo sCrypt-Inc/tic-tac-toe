@@ -79,6 +79,8 @@ const Wallet = props => {
 
                 <div className="fundtips">
                     <label >You can fund the address with <a href="https://faucet.bitcoincloud.net" target="_blank"><span> faucets</span></a></label>
+                    <br></br>
+                    <label className="warnning">Warnning: Testnet only, don't funds it with your real coin.</label>
                 </div>
             </div>
             <div className="walletqrcode">
