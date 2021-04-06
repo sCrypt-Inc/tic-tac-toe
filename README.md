@@ -1,9 +1,9 @@
-# Play Tic-Tac-Toe on Bitcoin
+# Tic-Tac-Toe: Bitcoin onchain App Tutorial
 
-Simple Bitcoin Tic-Tac-Toe dapp using sCrypt
+Build your first fully onchain application on Bitcoin.
 
-[go to play](https://scrypt.io/tic-tac-toe/)
+[Go to play](https://scrypt.io/tic-tac-toe/)
 
 [Tutorial](https://xiaohuiliu.medium.com/full-stack-bitcoin-dapp-tutorial-adff2bc4f657)
 
-[Tutorial 中文](./docs/tutorial.md)
+[Tutorial 中文](https://blog.csdn.net/freedomhero/article/details/115419901)
