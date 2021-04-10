@@ -51,7 +51,8 @@ export function toBsvTx(tx: Tx) {
       satoshis: output.satoshis,
     }));
   });
-  tx.nLockTime = tx.nLockTime || 0;
+
+  tx_.nLockTime = tx.nLockTime || 0;
   return tx_;
 }
 
