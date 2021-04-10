@@ -39,6 +39,7 @@ export function toBsvTx(tx: Tx) {
     tx_.addInput(new bsv.Transaction.Input({
       prevTxId: input.utxo.txHash,
       outputIndex: input.utxo.outputIndex,
+      sequenceNumber: input.sequence,
       script: input.script ? bsv.Script.fromHex(input.script) : new bsv.Script(),
     }), bsv.Script.fromHex(input.utxo.script), input.utxo.satoshis);
   });
@@ -50,7 +51,7 @@ export function toBsvTx(tx: Tx) {
       satoshis: output.satoshis,
     }));
   });
-
+  tx.nLockTime = tx.nLockTime || 0;
   return tx_;
 }
 
