@@ -21,6 +21,7 @@ export interface Input {
 }
 
 export interface Tx {
+  nLockTime?: number,
   inputs: Input[],
   outputs: Output[],
 }
