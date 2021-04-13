@@ -280,7 +280,7 @@ class Game extends React.Component {
 
     let bet;
     if (game && game.deploy) {
-      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
+      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
     }
 
     let player = server.getCurrentPlayer();
@@ -288,12 +288,12 @@ class Game extends React.Component {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
 

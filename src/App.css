@@ -225,3 +225,27 @@ a {
 .warnning {
   color: yellow;
 }
+
+.withdraw {
+  margin-bottom: 100px;
+  margin-top: 20px;
+}
+
+.withdraw button {
+ width: fit-content;
+ height: 35px;
+ text-align: unset;
+ vertical-align:0px;
+ margin: 15px 10px;
+ font-size: medium;
+}
+
+.withdraw input {
+  width: 350px;
+  height: 35px;
+  line-height: 35px;
+  vertical-align:0px;
+  margin: 0 0;
+  font-size: medium;
+  padding: 0 5px;
+ }

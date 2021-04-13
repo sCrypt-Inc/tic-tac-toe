@@ -46,8 +46,8 @@ export class web3 {
 
   static async buildDeployTx(contract: AbstractContract, amountInContract: number, alicePrivateKey: string, bobPrivateKey: string): Promise<Tx> {
 
-    let aliceWallet = new LocalWallet(NetWork.Testnet, alicePrivateKey);
-    let bobWallet = new LocalWallet(NetWork.Testnet, bobPrivateKey);
+    let aliceWallet = new LocalWallet(NetWork.Mainnet, alicePrivateKey);
+    let bobWallet = new LocalWallet(NetWork.Mainnet, bobPrivateKey);
 
     const aliceChangeAddress = await aliceWallet.getRawChangeAddress();
     const bobChangeAddress = await bobWallet.getRawChangeAddress();
