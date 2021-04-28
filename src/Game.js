@@ -4,7 +4,8 @@ import { bsv, Bytes, Sig, toHex } from 'scryptlib';
 import { web3, Input, SignType } from './web3';
 
 import server from './Server';
-import { getPreimage } from './web3/wutils';
+import { getPreimage, toRawTx } from './web3/wutils';
+import { DotWalletAddress, DotWalletPublicKey, getPlayer } from './utils';
 
 
 const calculateWinner = (squares) => {
@@ -123,7 +124,7 @@ class Game extends React.Component {
     let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
       // winner is current player
-
+      
       let address = await web3.wallet.getRawChangeAddress();
 
       newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
@@ -134,7 +135,7 @@ class Game extends React.Component {
       })
 
     } else if (history.length >= 9) {
-
+      
       const aliceAddress = new bsv.PublicKey(this.props.game.alicePubKey, {
         network: bsv.Networks.testnet
       });
@@ -183,19 +184,20 @@ class Game extends React.Component {
     }
 
     let preimage = getPreimage(tx);
-
-    let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
-
-    let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
+    const addr = DotWalletAddress.get();
+    const player = getPlayer();
+    let sig = await web3.wallet.getSignatureV2(toRawTx(tx), 0, SignType.ALL, addr, player);
+    debugger;
+    // let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
+    let unlockScript = this.props.contractInstance.move(i, new Sig((sig)), amount, preimage).toHex();
 
     tx.inputs[0].script = unlockScript;
-
+    debugger;
     return tx;
   }
 
 
   async handleClick(i) {
-
 
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
@@ -210,13 +212,14 @@ class Game extends React.Component {
     let newState = this.calculateNewState(squares);
 
     let tx = await this.buildCallContractTx(i, newState, squares, history);
-
+    debugger;
     if (!tx) {
       console.error('buildCallContractTx fail...')
       return;
     }
 
     web3.sendTx(tx).then(txid => {
+      debugger;
 
       squares[i].tx = txid;
       squares[i].n = history.length;

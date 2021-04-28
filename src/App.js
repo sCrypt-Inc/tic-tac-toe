@@ -8,6 +8,7 @@ import { web3, SignType } from './web3';
 import Wallet from './wallet';
 import { useInterval } from './hooks';
 import server from './Server';
+import { getPlayer } from './utils';
 
 
 
@@ -25,7 +26,6 @@ function App() {
     console.log('startBet with amount', amount)
 
     if (web3.wallet) {
-
       let balance = await web3.wallet.getbalance();
 
       if (amount > balance) {
@@ -33,7 +33,7 @@ function App() {
         return;
       }
 
-      let publicKey = await web3.wallet.getPublicKey();
+      let publicKey = await web3.wallet.getPublicKey({purpose:getPlayer()});
 
       let player = server.getCurrentPlayer();
 
@@ -61,7 +61,7 @@ function App() {
           "bobPubKey": publicKey,
         })
       }
-
+      
       server.createGame(game)
 
       forceUpdate();
@@ -74,9 +74,6 @@ function App() {
     updateStart(false)
     forceUpdate();
   }
-
-
-
 
   const onDeployed = async (game) => {
     console.log('onDeployed...')
@@ -114,12 +111,11 @@ function App() {
 
 
 
-  async function joinGame(game, alicePrivateKey, bobPrivateKey) {
+  async function joinGame(game) {
     console.log('joinGame...', game)
-    let pubKey = await web3.wallet.getPublicKey();
+    let pubKey = await web3.wallet.getPublicKey({purpose:getPlayer()});
 
     let balance = await web3.wallet.getbalance();
-
 
     if (balance <= game.amount) {
       alert('no available utxos or  balance is not enough, please fund your wallet')
@@ -143,10 +139,11 @@ function App() {
 
 
     let contract = await fetchContract(game.alicePubKey, game.bobPubKey);
-
+    // debugger;
     console.log('fetchContract', contract, player)
     if (contract != null) {
-      web3.deploy(contract, game.amount, alicePrivateKey, bobPrivateKey).then(([tx, txid]) => {
+      web3.deployV2(contract, game.amount).then(([tx, txid]) => {
+        debugger;
         game.lastUtxo = {
           txHash: txid,
           outputIndex: 0,
@@ -156,7 +153,6 @@ function App() {
 
         game.tx = tx;
         game.deploy = txid;
-
         server.saveGame(game, "deployed")
         updateStart(true)
       }).catch(e => {
@@ -177,7 +173,7 @@ function App() {
 
     if (!web3.wallet) {
       setTimeout(() => {
-        alert('Please create your wallet and fund it');
+        // alert('Please create your wallet and fund it');
       }, 1000)
     } else {
 
@@ -191,10 +187,13 @@ function App() {
         fetchContract(game.alicePubKey, game.bobPubKey)
       }
 
-      let alicePrivateKey = server.getAlicePrivateKey();
-      let bobPrivateKey = server.getBobPrivateKey();
-      if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
-        joinGame(game, alicePrivateKey, bobPrivateKey)
+      // let alicePrivateKey = server.getAlicePrivateKey();
+      // let bobPrivateKey = server.getBobPrivateKey();
+      // if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
+      //   joinGame(game, alicePrivateKey, bobPrivateKey)
+      // }
+      if (game && !game.deploy) {
+        joinGame(game)
       }
 
     }
@@ -211,7 +210,7 @@ function App() {
   }, [contractInstance]);
 
 
-
+   
   const game = server.getGame();
 
   return (

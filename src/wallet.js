@@ -2,30 +2,39 @@
 import * as QRCode from 'qrcode.react';
 import { bsv } from 'scryptlib';
 import React, { useState, useEffect } from 'react';
-import { web3, LocalWallet, NetWork, SignType } from './web3';
+import { web3, LocalWallet, NetWork, SignType ,DotWallet} from './web3';
 import { useInterval } from './hooks';
 import server from './Server';
+import {getCode} from './utils';
 
 const Wallet = props => {
 
     const [address, setAddress] = useState('')
     const [balance, setBalance] = useState(0)
 
+
+    useEffect(()=>{
+        const dw = new DotWallet(NetWork.Mainnet)
+        dw.code2token(getCode())
+    },[])
+
     useEffect(() => {
 
         if (web3.wallet) {
-            web3.wallet.getRawChangeAddress().then(address => {
-                setAddress(address)
-            })
-
+            // web3.wallet.getRawChangeAddress().then(address => {
+            //     setAddress(address)
+            // })
             web3.wallet.getbalance().then(balance => {
                 setBalance(balance)
             })
-        } else if (server.getPrivateKey()) {
-            web3.setWallet(new LocalWallet(NetWork.Mainnet, server.getPrivateKey()));
-            web3.wallet.getRawChangeAddress().then(address => {
-                setAddress(address)
+        } else if (server.getAccessToken()) {
+            web3.setWallet(new DotWallet(NetWork.Mainnet));
+            web3.wallet.getbalance().then(balance => {
+                setBalance(balance)
             })
+            // web3.wallet.getRawChangeAddress().then(address => {
+            //     setAddress(address)
+            // })
         }
     });
 
@@ -37,7 +46,7 @@ const Wallet = props => {
                 console.log(`update balance old: ${balance} new: ${b}`)
 
                 if (balance === 0 && b > 0) {
-                    alert('Successfully deposit, try F5 to reload the page')
+                    // alert('Successfully deposit, try F5 to reload the page')
                 }
 
                 setBalance(b)
@@ -50,16 +59,20 @@ const Wallet = props => {
     const onClick = (e) => {
 
         try {
-            const privateKey = new bsv.PrivateKey.fromRandom('mainnet')
+            const privateKey = new bsv.PrivateKey.fromRandom(NetWork.Regtest)
 
             setAddress(privateKey.toAddress() + '')
-            web3.setWallet(new LocalWallet(NetWork.Mainnet, privateKey.toWIF()));
+            web3.setWallet(new LocalWallet(NetWork.Regtest, privateKey.toWIF()));
 
             server.savePrivateKey(privateKey.toWIF());
         } catch (e) {
             console.log('wallet onChange error', e)
         }
     };
+
+    const handleAuth = (e)=>{
+        new DotWallet(NetWork.Mainnet).auth()
+    }
 
 
     const onWithdraw = async (e) => {
@@ -174,7 +187,8 @@ const Wallet = props => {
         </div>
     } else {
         return <div className="wallet">
-            <button className="pure-button button-large" onClick={onClick}>Create Wallet</button>
+            {/* <button className="pure-button button-large" onClick={handleAuth}>Create Wallet</button> */}
+            <button className="pure-button button-large" onClick={handleAuth}>Login dotwallet</button>
         </div>
     }
 

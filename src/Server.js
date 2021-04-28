@@ -1,14 +1,18 @@
 
 import { EventEmitter } from 'events';
+import { DotWalletToken } from './utils';
 
 class Server extends EventEmitter {
     player = ''
     privKey = ''
+    accessToken = ''
     constructor() {
         super();
         var urlParams = new URLSearchParams(window.location.search);
         this.player = urlParams.get('player') || "alice";
         const self = this;
+        this.accessToken = DotWalletToken.get()
+
         window.addEventListener('storage', (e) => {
             // When local storage changes, dump the list to
             // the console.
@@ -65,7 +69,7 @@ class Server extends EventEmitter {
         }
         return undefined
     }
-
+    
 
 
     getCurrentPlayer = () => (this.player);
@@ -95,6 +99,13 @@ class Server extends EventEmitter {
         return window.localStorage.getItem('alice');
     }
 
+    getAccessToken = () => {
+        if (this.player) {
+            this.accessToken = DotWalletToken.get();
+        }
+
+        return this.accessToken;
+    }
 
     addDeployedListener(cb) {
         console.log('addDeployedListener');
