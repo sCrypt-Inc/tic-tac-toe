@@ -153,8 +153,8 @@ export class web3 {
   
   static async buildDeployTxV2(contract: AbstractContract, amountInContract: number): Promise<Tx> {
 
-    let aliceWallet = new DotWallet(NetWork.Mainnet);
-    let bobWallet = new DotWallet(NetWork.Mainnet);
+    let aliceWallet = new DotWallet();
+    let bobWallet = new DotWallet();
 
     let aliceChangeAddress = '';
     let bobChangeAddress = '';

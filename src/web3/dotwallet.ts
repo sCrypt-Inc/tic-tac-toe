@@ -13,13 +13,22 @@ export class DotWallet extends wallet {
   CLIENT_SECRET = '387b8a75d3f61bb10dacc6e0860c79bf';
   loginUrl:string;
   privKey: any;
+  sender:any; 
 
-  constructor(network: NetWork) {
+  constructor(network: NetWork = NetWork.Mainnet) {
     super(network);
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network == NetWork.Regtest ? 'test' : 'main'}`;
-    this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
+    // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
+    this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://staging.api.ddpurse.com`;
     const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(window.origin)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
     this.loginUrl = loginUrl;
+    this.sender = network == NetWork.Regtest ? {
+      "appid": "test_bsv_coin_regular",
+      "user_index": 0
+    } :{
+      "appid": "bsv_coin_regular",
+      "user_index": 0
+    }
 
     // this.privKey = key ? new bsv.PrivateKey.fromWIF(key) : new bsv.PrivateKey.fromRandom(network);
   }
@@ -58,10 +67,7 @@ export class DotWallet extends wallet {
   async getbalance(): Promise<number> {
     try {
       const { data } = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_get_balance}`, {
-        "sender": {
-          "appid": "test_bsv_coin_regular",
-          "user_index": 0
-        },
+        "sender": this.sender,
       }); 
       return data.data.confirm + data.data.unconfirm;
     } catch (error) {
@@ -80,10 +86,7 @@ export class DotWallet extends wallet {
     // const utxo = tx.inputs[inputIndex].utxo;
 
     const {data} = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_sign_raw_transaction}`, {
-      "sender": {
-        "appid": "test_bsv_coin_regular",
-        "user_index": 0
-      },
+      "sender": this.sender,
       "input_index": inputIndex,
       "sig_type": sigHashType,
       rawtx,
@@ -106,10 +109,7 @@ export class DotWallet extends wallet {
     player: String,
   ): Promise<string> {
     const {data} = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_get_signature}`, {
-      "sender": {
-        "appid": "test_bsv_coin_regular",
-        "user_index": 0
-      },
+      "sender": this.sender,
       "input_index": inputIndex,
       "sig_type": sigHashType,
       rawtx,
@@ -126,10 +126,7 @@ export class DotWallet extends wallet {
   async sendRawTransaction(rawTx: string): Promise<string> {
 
     const {data} = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_send_raw_transaction}`, {
-      "sender": {
-        "appid": "test_bsv_coin_regular",
-        "user_index": 0
-      },
+      "sender": this.sender,
       rawTx,
     });
 
@@ -138,10 +135,7 @@ export class DotWallet extends wallet {
 
   async listUnspent(minAmount: number, options?: { purpose?: string; }): Promise<UTXO[]> {
     const {data} = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_list_unspent}`, {
-        "sender": {
-          "appid": "test_bsv_coin_regular",
-          "user_index": 0
-        },
+        "sender": this.sender,
         "min_amount":minAmount
       },{
         headers :{
@@ -168,10 +162,7 @@ export class DotWallet extends wallet {
 
   async getRawChangeAddress(options?: { purpose?: string; }):  Promise<string> {
     const { data } = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_get_raw_change_address}`, {
-      "sender": {
-        "appid": "test_bsv_coin_regular",
-        "user_index": 0
-      },
+      "sender": this.sender,
     },{
       headers :{
         "player": options?.purpose
@@ -184,10 +175,7 @@ export class DotWallet extends wallet {
 
   async getPublicKey(options?: { purpose?: string; }): Promise<string> {
     const { data } = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_get_public_key}`, {
-      "sender": {
-        "appid": "test_bsv_coin_regular",
-        "user_index": 0
-      },
+      "sender": this.sender,
     },{
       headers :{
         "player": options?.purpose

@@ -14,7 +14,7 @@ const Wallet = props => {
 
 
     useEffect(()=>{
-        const dw = new DotWallet(NetWork.Mainnet)
+        const dw = new DotWallet()
         dw.code2token(getCode())
     },[])
 
@@ -28,7 +28,7 @@ const Wallet = props => {
                 setBalance(balance)
             })
         } else if (server.getAccessToken()) {
-            web3.setWallet(new DotWallet(NetWork.Mainnet));
+            web3.setWallet(new DotWallet());
             web3.wallet.getbalance().then(balance => {
                 setBalance(balance)
             })
@@ -71,7 +71,7 @@ const Wallet = props => {
     };
 
     const handleAuth = (e)=>{
-        new DotWallet(NetWork.Mainnet).auth()
+        new DotWallet().auth()
     }
 
 
