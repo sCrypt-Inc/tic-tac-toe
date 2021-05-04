@@ -171,7 +171,7 @@ const Wallet = props => {
                 <div className="fundtips">
                     <label >You can fund the address with your wallet</label>
                     <br></br>
-                    <label className="warnning">Warnning:  don't funds it with too much coin.</label>
+                    <label className="warnning">Warnning: please do not fund it with too much coin.</label>
                     
                 </div>
                 <div className="withdraw" >
