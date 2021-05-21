@@ -159,8 +159,6 @@ export class web3 {
     let aliceChangeAddress = '';
     let bobChangeAddress = '';
     
-    // let alicePublicKey = await aliceWallet.getPublicKey({purpose:'alice'});
-    // let bobPublicKey = await bobWallet.getPublicKey({purpose:'alice'});
     let alicePublicKey = '';
     let bobPublicKey = '';
 
@@ -175,7 +173,7 @@ export class web3 {
     });
 
     const minAmount = amountInContract + FEE;
-    // debugger;
+
     return aliceWallet.listUnspent(minAmount, {
       purpose: 'alice'
     }).then(async (utxos: UTXO[]) => {
@@ -327,6 +325,65 @@ export class web3 {
         tx.inputs[1].script = script;
         // debugger;
         return tx;
+      })
+    })
+  }
+
+  static async setAllPublicKey(amountInContract: number): Promise<void> {
+
+    let aliceWallet = new DotWallet();
+    let bobWallet = new DotWallet();
+
+    let aliceChangeAddress = '';
+    let bobChangeAddress = '';
+    
+    let alicePublicKey = '';
+    let bobPublicKey = '';
+
+    const minAmount = amountInContract + FEE;
+
+    return aliceWallet.listUnspent(minAmount, {
+      purpose: 'alice'
+    }).then(async (utxos: UTXO[]) => {
+
+      if (utxos.length === 0) {
+        throw new Error('no utxos');
+      }
+    
+      aliceChangeAddress = utxos[0].addr;
+      alicePublicKey = utxos[0].pubkey;
+
+      DotWalletPublicKey.set(alicePublicKey,'alice');
+      DotWalletAddress.set(aliceChangeAddress,'alice');
+      // debugger;
+      const changeAmount = utxos[0].satoshis - amountInContract - FEE;
+
+      if (changeAmount <= 0) {
+        throw new Error('fund is not enough');
+      }
+
+    }).then(tx => {
+      return bobWallet.listUnspent(minAmount, {
+        purpose: 'bob'
+      }).then(async (utxos: UTXO[]) => {
+
+        if (utxos.length === 0) {
+          throw new Error('no utxos');
+        }
+
+        bobChangeAddress = utxos[0].addr;
+        bobPublicKey = utxos[0].pubkey;
+
+        DotWalletPublicKey.set(bobPublicKey,'bob');
+        DotWalletAddress.set(bobChangeAddress,'bob');
+        // debugger;
+        const changeAmount = utxos[0].satoshis - amountInContract - FEE;
+      
+        if (changeAmount <= 0) {
+          throw new Error('fund is not enough');
+        }
+
+
       })
     })
   }

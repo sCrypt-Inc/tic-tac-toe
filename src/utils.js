@@ -18,6 +18,7 @@ export const LocalStorageKey = {
 
 export const DAPP_API_PATHS = {
   dapp_list_unspent: `/v1/grandet_dapp/dapp_list_unspent`,
+  dapp_list_unspent_by_address: `/v1/grandet_dapp/dapp_list_unspent_by_address`,
   dapp_sign_raw_transaction: `/v1/grandet_dapp/dapp_sign_raw_transaction`,
   dapp_get_signature: `/v1/grandet_dapp/dapp_get_signature`,
   dapp_get_balance: `/v1/grandet_dapp/dapp_get_balance`,
@@ -66,10 +67,13 @@ export const DotWalletToken = {
 };
 
 export const DotWalletPublicKey = {
-  get: () => {
-    const player = getPlayer();
+  get: (player) => {
+    if(player){
+      return localStorage[`public_key_${player}`];
+    }
+    const _player = getPlayer();
     const key =
-      player === "alice"
+    _player === "alice"
         ? LocalStorageKey.publicKeyAlice
         : LocalStorageKey.publicKeyBob;
     return localStorage.getItem(key);
@@ -88,10 +92,13 @@ export const DotWalletPublicKey = {
 };
 
 export const DotWalletAddress = {
-  get: () => {
-    const player = getPlayer();
+  get: (player) => {
+    if(player){
+      return localStorage[`address_${player}`];
+    }
+    const _player = getPlayer();
     const key =
-      player === "alice"
+      _player === "alice"
         ? LocalStorageKey.addressAlice
         : LocalStorageKey.addressBob;
     return localStorage.getItem(key);
