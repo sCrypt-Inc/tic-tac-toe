@@ -1,233 +1,218 @@
-import './App.css';
-import Game from './Game';
-import React, { useState, useEffect } from 'react';
-import TitleBar from './TitleBar';
-import { Bytes, PubKey, toHex, newCall } from 'scryptlib';
+import "./App.css";
+import Game from "./Game";
+import React, { useState, useEffect } from "react";
+import TitleBar from "./TitleBar";
+import { Bytes, PubKey, toHex, newCall } from "scryptlib";
 
-import { web3, SignType } from './web3';
-import Wallet from './wallet';
-import { useInterval } from './hooks';
-import server from './Server';
-
-
+import { web3, SignType } from "./web3";
+import Wallet from "./wallet";
+import { useInterval } from "./hooks";
+import server from "./Server";
+import { getPlayer, DotWalletPublicKey } from "./utils";
 
 function App() {
-
   const [started, updateStart] = useState(false);
 
   const [contractInstance, updateContractInstance] = useState(null);
 
-  const forceUpdate = React.useReducer(bool => !bool)[1];
+  const forceUpdate = React.useReducer((bool) => !bool)[1];
 
   const startBet = async (amount) => {
-
     //let tx = await web3.deploy(contractInstance, 10000);
-    console.log('startBet with amount', amount)
+    console.log("startBet with amount", amount);
 
     if (web3.wallet) {
-
       let balance = await web3.wallet.getbalance();
 
       if (amount > balance) {
-        alert('Please fund your wallet address first')
+        alert("Please fund your wallet address first");
         return;
       }
-
-      let publicKey = await web3.wallet.getPublicKey();
+      // debugger;
+      // let publicKey = await web3.wallet.getPublicKey({purpose:getPlayer()});
 
       let player = server.getCurrentPlayer();
 
       let game = {
-        "amount": amount,
-        "tx": {
+        amount: amount,
+        tx: {
           inputs: [],
-          outputs: []
+          outputs: [],
         },
-        "name": "tic-tac-toe",
-        "alicePubKey": "",
-        "bobPubKey": "",
-        "creator": player,
-        "player": "",
-        "date": new Date()
-      }
+        name: "tic-tac-toe",
+        alicePubKey: "",
+        bobPubKey: "",
+        creator: player,
+        player: "",
+        date: new Date(),
+      };
 
       if (player === "alice") {
         Object.assign(game, {
-          "alicePubKey": publicKey,
-        })
-
+          alicePubKey: DotWalletPublicKey.get("alice"),
+        });
       } else {
         Object.assign(game, {
-          "bobPubKey": publicKey,
-        })
+          bobPubKey: DotWalletPublicKey.get("bob"),
+        });
       }
 
-      server.createGame(game)
+      server.createGame(game);
 
       forceUpdate();
     }
-  }
+  };
 
   const cancelBet = () => {
-
     server.deleteGame();
-    updateStart(false)
+    updateStart(false);
     forceUpdate();
-  }
-
-
-
+  };
 
   const onDeployed = async (game) => {
-    console.log('onDeployed...')
+    console.log("onDeployed...");
 
     if (game && game.alicePubKey && game.bobPubKey) {
-      fetchContract(game.alicePubKey, game.bobPubKey)
+      fetchContract(game.alicePubKey, game.bobPubKey);
     }
 
     updateStart(true);
-  }
-
+  };
 
   const onNext = async (game) => {
     //BOB SIGN
-    console.log("onNext", game)
+    console.log("onNext", game);
     forceUpdate();
-  }
-
+  };
 
   async function fetchContract(alicePubKey, bobPubKey) {
-
     if (contractInstance === null && alicePubKey && bobPubKey) {
-      let {
-        contractClass: TictactoeContractClass
-      } = await web3.loadContract("/tic-tac-toe/tictactoe_desc.json");
+      let { contractClass: TictactoeContractClass } = await web3.loadContract(
+        // "/tic-tac-toe/tictactoe_desc.json"
+        "/tictactoe_desc.json"
+      );
 
-      let c = newCall(TictactoeContractClass, [new PubKey(toHex(alicePubKey)), new PubKey(toHex(bobPubKey))])
-      c.setDataPart('00000000000000000000');
+      let c = newCall(TictactoeContractClass, [
+        new PubKey(toHex(alicePubKey)),
+        new PubKey(toHex(bobPubKey)),
+      ]);
+      c.setDataPart("00000000000000000000");
       updateContractInstance(c);
-      console.log('fetchContract successfully')
+      console.log("fetchContract successfully");
       return c;
     }
-    return contractInstance
+    return contractInstance;
   }
 
-
-
-  async function joinGame(game, alicePrivateKey, bobPrivateKey) {
-    console.log('joinGame...', game)
-    let pubKey = await web3.wallet.getPublicKey();
+  async function joinGame(game) {
+    console.log("joinGame...", game);
 
     let balance = await web3.wallet.getbalance();
 
-
     if (balance <= game.amount) {
-      alert('no available utxos or  balance is not enough, please fund your wallet')
+      alert(
+        "no available utxos or  balance is not enough, please fund your wallet"
+      );
       return;
     }
 
+    await web3.setAllPublicKey(20000);
+
     let player = server.getCurrentPlayer();
 
-    if (player === "alice") {
-      Object.assign(game, {
-        "alicePubKey": pubKey,
-        "player": player
-      })
-
-    } else {
-      Object.assign(game, {
-        "bobPubKey": pubKey,
-        "player": player
-      })
-    }
-
+    // if (player === "alice") {
+    Object.assign(game, {
+      alicePubKey: DotWalletPublicKey.get("alice"),
+      player: "alice",
+    });
+    // } else {
+    Object.assign(game, {
+      bobPubKey: DotWalletPublicKey.get("bob"),
+      player: "bob",
+    });
+    // }
 
     let contract = await fetchContract(game.alicePubKey, game.bobPubKey);
-
-    console.log('fetchContract', contract, player)
+    debugger;
+    console.log("fetchContract", contract, player);
     if (contract != null) {
-      web3.deploy(contract, game.amount, alicePrivateKey, bobPrivateKey).then(([tx, txid]) => {
-        game.lastUtxo = {
-          txHash: txid,
-          outputIndex: 0,
-          satoshis: tx.outputs[0].satoshis,
-          script: tx.outputs[0].script
-        };
+      web3
+        .deployV2(contract, game.amount)
+        .then(([tx, txid]) => {
+          debugger;
+          game.lastUtxo = {
+            txHash: txid,
+            outputIndex: 0,
+            satoshis: tx.outputs[0].satoshis,
+            script: tx.outputs[0].script,
+          };
 
-        game.tx = tx;
-        game.deploy = txid;
-
-        server.saveGame(game, "deployed")
-        updateStart(true)
-      }).catch(e => {
-        if (e.message === 'no utxos') {
-          alert('no available utxos, please fund your wallet')
-        }
-        console.error('deploy error', e)
-      })
+          game.tx = tx;
+          game.deploy = txid;
+          server.saveGame(game, "deployed");
+          updateStart(true);
+        })
+        .catch((e) => {
+          if (e.message === "no utxos") {
+            alert("no available utxos, please fund your wallet");
+          }
+          console.error("deploy error", e);
+        });
     }
   }
 
-
-
   useEffect(() => {
-
-
-
-
     if (!web3.wallet) {
       setTimeout(() => {
-        alert('Please create your wallet and fund it');
-      }, 1000)
+        // alert('Please create your wallet and fund it');
+      }, 1000);
     } else {
-
       let game = server.getGame();
 
       if (game && game.lastUtxo) {
-        updateStart(true)
+        updateStart(true);
       }
 
       if (game && game.alicePubKey && game.bobPubKey) {
-        fetchContract(game.alicePubKey, game.bobPubKey)
+        fetchContract(game.alicePubKey, game.bobPubKey);
       }
 
-      let alicePrivateKey = server.getAlicePrivateKey();
-      let bobPrivateKey = server.getBobPrivateKey();
-      if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
-        joinGame(game, alicePrivateKey, bobPrivateKey)
+      // let alicePrivateKey = server.getAlicePrivateKey();
+      // let bobPrivateKey = server.getBobPrivateKey();
+      // if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
+      //   joinGame(game, alicePrivateKey, bobPrivateKey)
+      // }
+      if (game && !game.deploy) {
+        joinGame(game);
       }
-
     }
-
 
     server.addDeployedListener(onDeployed);
-    server.addNextListener(onNext)
+    server.addNextListener(onNext);
     return () => {
-
-      server.removeDeployedListener(onDeployed)
-      server.removeNextListener(onNext)
-    }
-
+      server.removeDeployedListener(onDeployed);
+      server.removeNextListener(onNext);
+    };
   }, [contractInstance]);
-
-
 
   const game = server.getGame();
 
   return (
     <div className="App">
-
       <header className="App-header">
-        <h2>
-          Play Tic-Tac-Toe on Bitcoin
-        </h2>
-        <TitleBar startBet={startBet} cancelBet={cancelBet} started={started} game={game} />
+        <h2>Play Tic-Tac-Toe on Bitcoin</h2>
+        <TitleBar
+          startBet={startBet}
+          cancelBet={cancelBet}
+          started={started}
+          game={game}
+        />
 
         <Game game={game} contractInstance={contractInstance} />
 
-        <Wallet ></Wallet>
+        <Wallet></Wallet>
       </header>
-    </div >
+    </div>
   );
 }
 

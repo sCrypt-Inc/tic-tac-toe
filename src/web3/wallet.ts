@@ -6,6 +6,8 @@ export interface UTXO {
   outputIndex: string;
   satoshis: number;
   script: string;
+  addr: string;
+  pubkey: string
 }
 
 export interface Output {
@@ -36,6 +38,7 @@ export interface Account {
 
 export enum NetWork {
   Testnet = 'testnet',
+  Regtest = 'regtest',
   Mainnet = 'mainnet',
   STN = 'STN'
 }

@@ -4,7 +4,8 @@ import { bsv, Bytes, Sig, toHex } from 'scryptlib';
 import { web3, Input, SignType } from './web3';
 
 import server from './Server';
-import { getPreimage } from './web3/wutils';
+import { getPreimage, toRawTx, toBsvTx } from './web3/wutils';
+import { DotWalletAddress, DotWalletPublicKey, getPlayer } from './utils';
 
 
 const calculateWinner = (squares) => {
@@ -91,6 +92,19 @@ class Game extends React.Component {
     }).join('');
   }
 
+  calculateOldState(squares) {
+    return (this.state.xIsNext ? '00' : '01') + squares.map(square => {
+
+      if (square && square.label === 'X') {
+        return '01'
+      } else if (square && square.label === 'O') {
+        return '02'
+      } else {
+        return '00';
+      }
+    }).join('');
+  }
+
 
   checkIfValid(i, squares) {
     if (!this.props.game || !this.props.game.lastUtxo) {
@@ -115,16 +129,18 @@ class Game extends React.Component {
   }
 
 
-  async buildCallContractTx(i, newState, squares, history) {
+  async buildCallContractTx(i, newState, oldState, squares, history) {
     let newLockingScript = "";
     let winner = calculateWinner(squares).winner;
     const FEE = 3000;
     let outputs = [];
     let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
+      const player = getPlayer();
+      // debugger;
       // winner is current player
-
-      let address = await web3.wallet.getRawChangeAddress();
+      
+      let address = await DotWalletAddress.get(player);
 
       newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
 
@@ -134,7 +150,7 @@ class Game extends React.Component {
       })
 
     } else if (history.length >= 9) {
-
+      debugger;
       const aliceAddress = new bsv.PublicKey(this.props.game.alicePubKey, {
         network: bsv.Networks.testnet
       });
@@ -184,11 +200,54 @@ class Game extends React.Component {
 
     let preimage = getPreimage(tx);
 
-    let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
+    const addr = DotWalletAddress.get();
+    const player = getPlayer();
+    let sig = await web3.wallet.getSignatureV2(toRawTx(tx), 0, SignType.ALL, addr, player);
+
+    // let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
+
+    this.props.contractInstance.setDataPart(oldState);
+    
 
     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
     tx.inputs[0].script = unlockScript;
+
+    // we can verify locally before we broadcast the tx, if fail, 
+    // it will print the launch.json in the brower webview developer tool, just copy/paste,
+    // and try launch the sCrypt debugger
+
+    const result = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).verify({ inputSatoshis: this.props.game.lastUtxo.satoshis, tx: toBsvTx(tx) })
+
+    if (!result.success) {
+      throw new Error(result.error)
+    }
+
+
+//     debugger;
+//     // let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
+//     let unlockScript = this.props.contractInstance.move(i, new Sig((sig)), amount, preimage).toHex();
+
+//     tx.inputs[0].script = unlockScript;
+//     debugger;
+
+//     let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
+
+//     this.props.contractInstance.setDataPart(oldState);
+
+//     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
+
+//     tx.inputs[0].script = unlockScript;
+
+//     // we can verify locally before we broadcast the tx, if fail, 
+//     // it will print the launch.json in the brower webview developer tool, just copy/paste,
+//     // and try launch the sCrypt debugger
+
+//     const result = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).verify({ inputSatoshis: this.props.game.lastUtxo.satoshis, tx: toBsvTx(tx) })
+
+//     if (!result.success) {
+//       throw new Error(result.error)
+//     }
 
     return tx;
   }
@@ -196,11 +255,11 @@ class Game extends React.Component {
 
   async handleClick(i) {
 
-
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
+    const oldState = this.calculateOldState(squares);
     if (!this.checkIfValid(i, squares)) {
       console.error('handleClick checkIfValid false...')
       return;
@@ -209,7 +268,9 @@ class Game extends React.Component {
 
     let newState = this.calculateNewState(squares);
 
-    let tx = await this.buildCallContractTx(i, newState, squares, history);
+    // let tx = await this.buildCallContractTx(i, newState, squares, history);
+    let tx = await this.buildCallContractTx(i, newState, oldState, squares, history);
+    debugger;
 
     if (!tx) {
       console.error('buildCallContractTx fail...')
@@ -217,6 +278,7 @@ class Game extends React.Component {
     }
 
     web3.sendTx(tx).then(txid => {
+      debugger;
 
       squares[i].tx = txid;
       squares[i].n = history.length;
@@ -273,14 +335,14 @@ class Game extends React.Component {
 
 
     if (server.getCurrentPlayer() === 'bob') {
-      icon = <div className="bob">Bob<img src="/tic-tac-toe/bob.png"></img></div>
+      icon = <div className="bob">Bob<img src="/bob.png"></img></div>
     } else {
-      icon = <div className="alice">Alice<img src="/tic-tac-toe/alice.jpg"></img></div>
+      icon = <div className="alice">Alice<img src="/alice.jpg"></img></div>
     }
 
     let bet;
     if (game && game.deploy) {
-      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
+      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
     }
 
     let player = server.getCurrentPlayer();
@@ -288,12 +350,12 @@ class Game extends React.Component {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
 

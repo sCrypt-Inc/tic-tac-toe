@@ -2,42 +2,54 @@
 import * as QRCode from 'qrcode.react';
 import { bsv } from 'scryptlib';
 import React, { useState, useEffect } from 'react';
-import { web3, LocalWallet, NetWork, SignType } from './web3';
+import { web3, LocalWallet, NetWork, SignType ,DotWallet} from './web3';
 import { useInterval } from './hooks';
 import server from './Server';
+import {getCode} from './utils';
 
 const Wallet = props => {
 
     const [address, setAddress] = useState('')
     const [balance, setBalance] = useState(0)
+    const [authed, setAuth] = useState(false)
+
+
+    useEffect(()=>{
+        const dw = new DotWallet()
+        dw.code2token(getCode())
+    },[])
 
     useEffect(() => {
 
         if (web3.wallet) {
-            web3.wallet.getRawChangeAddress().then(address => {
-                setAddress(address)
-            })
-
+            // web3.wallet.getRawChangeAddress().then(address => {
+            //     setAddress(address)
+            // })
             web3.wallet.getbalance().then(balance => {
                 setBalance(balance)
             })
-        } else if (server.getPrivateKey()) {
-            web3.setWallet(new LocalWallet(NetWork.Mainnet, server.getPrivateKey()));
-            web3.wallet.getRawChangeAddress().then(address => {
-                setAddress(address)
+        } else if (server.getAccessToken()) {
+            web3.setWallet(new DotWallet());
+            web3.wallet.getbalance().then(balance => {
+                setAuth(true)
+                setBalance(balance)
             })
+            // web3.wallet.getRawChangeAddress().then(address => {
+            //     setAddress(address)
+            // })
         }
-    });
+    },[]);
 
 
     useInterval(() => {
-
+        // console.log('web3.wallet')
+        // console.log(web3.wallet)
         if (web3.wallet) {
             web3.wallet.getbalance().then(b => {
                 console.log(`update balance old: ${balance} new: ${b}`)
 
                 if (balance === 0 && b > 0) {
-                    alert('Successfully deposit, try F5 to reload the page')
+                    // alert('Successfully deposit, try F5 to reload the page')
                 }
 
                 setBalance(b)
@@ -50,16 +62,20 @@ const Wallet = props => {
     const onClick = (e) => {
 
         try {
-            const privateKey = new bsv.PrivateKey.fromRandom('mainnet')
+            const privateKey = new bsv.PrivateKey.fromRandom(NetWork.Regtest)
 
             setAddress(privateKey.toAddress() + '')
-            web3.setWallet(new LocalWallet(NetWork.Mainnet, privateKey.toWIF()));
+            web3.setWallet(new LocalWallet(NetWork.Regtest, privateKey.toWIF()));
 
             server.savePrivateKey(privateKey.toWIF());
         } catch (e) {
             console.log('wallet onChange error', e)
         }
     };
+
+    const handleAuth = (e)=>{
+        new DotWallet().auth()
+    }
 
 
     const onWithdraw = async (e) => {
@@ -75,17 +91,17 @@ const Wallet = props => {
 
             let address = new bsv.Address.fromString(withdrawAddress);
 
-            if(address && address.type === 'pubkeyhash' && address.network.name === 'livenet') {
-                console.log('adddress', address )
+            if (address && address.type === 'pubkeyhash' && address.network.name === 'testnet') {
+                console.log('adddress', address)
             } else {
                 throw 'invalid bitcoin address';
             }
-            
+
             let changeAddress = address + ''
 
             web3.wallet.listUnspent(0).then(utxos => {
 
-                let total = 0 ;
+                let total = 0;
                 utxos.forEach(utxo => {
                     total += utxo.satoshis;
                     tx.inputs.push(
@@ -115,41 +131,41 @@ const Wallet = props => {
 
                 return tx;
             })
-            .then(tx => {
-                //alice sign
+                .then(tx => {
+                    //alice sign
 
-                tx.inputs.forEach(async (input, index) => {
-                    let unlockscript = await web3.wallet.signRawTransaction(tx, index, SignType.ALL);
+                    tx.inputs.forEach(async (input, index) => {
+                        let unlockscript = await web3.wallet.signRawTransaction(tx, index, SignType.ALL);
 
-                    tx.inputs[index].script = unlockscript;
+                        tx.inputs[index].script = unlockscript;
 
+                    })
+
+                    return tx;
+                }).then(tx => {
+                    console.log('send tx', tx)
+                    return web3.sendTx(tx);
+                }).then(txid => {
+                    console.log('console txid', txid)
+                }).catch(e => {
+                    alert('withdraw error ' + e)
                 })
-  
-                return tx;
-            }).then(tx => {
-                console.log('send tx', tx)
-                return web3.sendTx(tx);
-            }).then(txid => {
-                console.log('console txid', txid)
-            }).catch(e => {
-                alert('withdraw error ' + e)
-            })
-        
-    } catch(e) {
-        alert('withdraw error ' + e)
+
+        } catch (e) {
+            alert('withdraw error ' + e)
+        }
+
     }
 
-}
 
 
-
-    if (web3.wallet) {
+    if (authed) {
         return <div className="wallet">
 
             <div className="walletInfo">
-                <div className="address" >
+                {/* <div className="address" >
                     <label>Address: {address}</label>
-                </div>
+                </div> */}
 
                 <div className="balance">
                     <label >Balance: {balance}</label>
@@ -158,26 +174,26 @@ const Wallet = props => {
                 <div className="fundtips">
                     <label >You can fund the address with your wallet</label>
                     <br></br>
-                    <label className="warnning">Warnning: please do not fund it with too much coin.</label>
+                    {/* <label className="warnning">Warnning: please do not fund it with too much coin.</label> */}
                     
                 </div>
-                <div className="withdraw" >
+                {/* <div className="withdraw" >
                     <input id="withdrawAddress" placeholder="Bitcoin Address" type='text' ></input>
-                    <button  onClick={onWithdraw}>Withdraw Fund</button>
-                </div>
-               
+                    <button onClick={onWithdraw}>Withdraw Fund</button>
+                </div> */}
+
             </div>
             <div className="walletqrcode">
-                <QRCode value={address} ></QRCode>
+                {/* <QRCode value={address} ></QRCode> */}
             </div>
 
         </div>
     } else {
         return <div className="wallet">
-            <button className="pure-button button-large" onClick={onClick}>Create Wallet</button>
+            {/* <button className="pure-button button-large" onClick={handleAuth}>Create Wallet</button> */}
+            <button className="pure-button button-large" onClick={handleAuth}>Login dotwallet</button>
         </div>
     }
-
 }
 
 export default Wallet;
