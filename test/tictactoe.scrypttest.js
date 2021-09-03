@@ -23,7 +23,9 @@ function runCompile(fileName) {
     mkdirSync(out);
   }
 
-  const result = compileContract(filePath, out);
+  const result = compileContract(filePath, {
+    out: out
+  });
   if (result.errors.length > 0) {
     console.log(`Compile contract ${filePath} fail: `, result.errors)
     throw result.errors;
