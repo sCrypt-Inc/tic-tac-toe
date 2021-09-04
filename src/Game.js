@@ -304,9 +304,9 @@ class Game extends React.Component {
 
 
     if (server.getCurrentPlayer() === 'bob') {
-      icon = <div className="bob">Bob<img src="/bob.png"></img></div>
+      icon = <div className="bob">Bob<img src="/tic-tac-toe/bob.png"></img></div>
     } else {
-      icon = <div className="alice">Alice<img src="/alice.jpg"></img></div>
+      icon = <div className="alice">Alice<img src="/tic-tac-toe/alice.jpg"></img></div>
     }
 
     let bet;

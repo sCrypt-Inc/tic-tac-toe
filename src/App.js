@@ -159,9 +159,7 @@ function App() {
 
   useEffect(() => {
     if (!web3.wallet) {
-      setTimeout(() => {
-         alert('Please create your wallet and fund it');
-      }, 1000);
+
     } else {
       let game = server.getGame();
 

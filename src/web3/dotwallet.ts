@@ -45,10 +45,10 @@ export class DotWallet extends wallet {
       if (access_token) {
         localStorage[LocalStorageKey.accountToken] = access_token;
         const query = getPlayerByState() == 'alice' ? "?player=alice" : "?player=bob";
-        window.location.href = `${window.location.origin}${query}`
+        window.location.href = `${window.location.origin}/tic-tac-toe${query}`
       }
     } catch (error) {
-      window.location.href = window.location.origin
+      window.location.href = `${window.location.origin}/tic-tac-toe`
     }
   };
 
