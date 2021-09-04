@@ -39,7 +39,7 @@ export class DotWallet extends wallet {
     try {
       const { data } = await axios.post(`https://common.mempool.com/api/dotwallet/get_access_token`, {
         code,
-        redirect_uri: window.location.origin
+        redirect_uri: `${window.location.origin}/tic-tac-toe`
       });
       const { access_token } = data.data;
       if (access_token) {
