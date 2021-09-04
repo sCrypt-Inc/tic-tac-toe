@@ -1,13 +1,14 @@
 export const LocalStorageKey = {
+
+  accountToken : "access_token",
+  refreshToken : "refresh_token",
+
+
   // bob
-  accountTokenBob : "access_token_bob",
-  refreshTokenBob : "refresh_token_bob",
   publicKeyBob : "public_key_bob",
   addressBob : "address_bob",
   userBob : "user_bob",
   // alice
-  accountTokenAlice : "access_token_alice",
-  refreshTokenAlice : "refresh_token_alice",
   publicKeyAlice : "public_key_alice",
   addressAlice : "address_alice",
   userAlice : "user_alice",
@@ -49,20 +50,10 @@ export const getCode = () => {
 
 export const DotWalletToken = {
   get: () => {
-    const player = getPlayer();
-    const key =
-      player === "alice"
-        ? LocalStorageKey.accountTokenAlice
-        : LocalStorageKey.accountTokenBob;
-    return localStorage.getItem(key);
+    return localStorage.getItem(LocalStorageKey.accountToken);
   },
   set: (accessToken) => {
-    const player = getPlayer();
-    const key =
-      player === "alice"
-        ? LocalStorageKey.accountTokenAlice
-        : LocalStorageKey.accountTokenBob;
-    localStorage.setItem(key, accessToken);
+    localStorage.setItem(LocalStorageKey.accountToken, accessToken);
   },
 };
 

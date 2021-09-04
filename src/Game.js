@@ -137,7 +137,6 @@ class Game extends React.Component {
     let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
       const player = getPlayer();
-      // debugger;
       // winner is current player
       
       let address = await DotWalletAddress.get(player);
@@ -150,7 +149,7 @@ class Game extends React.Component {
       })
 
     } else if (history.length >= 9) {
-      debugger;
+
       const aliceAddress = new bsv.PublicKey(this.props.game.alicePubKey, {
         network: bsv.Networks.testnet
       });
@@ -201,10 +200,8 @@ class Game extends React.Component {
     let preimage = getPreimage(tx);
 
     const addr = DotWalletAddress.get();
-    const player = getPlayer();
-    let sig = await web3.wallet.getSignatureV2(toRawTx(tx), 0, SignType.ALL, addr, player);
 
-    // let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
+    let sig = await web3.wallet.getSignature(toRawTx(tx), 0, SignType.ALL, addr);
 
     this.props.contractInstance.setDataPart(oldState);
     
@@ -222,32 +219,6 @@ class Game extends React.Component {
     if (!result.success) {
       throw new Error(result.error)
     }
-
-
-//     debugger;
-//     // let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
-//     let unlockScript = this.props.contractInstance.move(i, new Sig((sig)), amount, preimage).toHex();
-
-//     tx.inputs[0].script = unlockScript;
-//     debugger;
-
-//     let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
-
-//     this.props.contractInstance.setDataPart(oldState);
-
-//     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
-
-//     tx.inputs[0].script = unlockScript;
-
-//     // we can verify locally before we broadcast the tx, if fail, 
-//     // it will print the launch.json in the brower webview developer tool, just copy/paste,
-//     // and try launch the sCrypt debugger
-
-//     const result = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).verify({ inputSatoshis: this.props.game.lastUtxo.satoshis, tx: toBsvTx(tx) })
-
-//     if (!result.success) {
-//       throw new Error(result.error)
-//     }
 
     return tx;
   }
@@ -270,7 +241,6 @@ class Game extends React.Component {
 
     // let tx = await this.buildCallContractTx(i, newState, squares, history);
     let tx = await this.buildCallContractTx(i, newState, oldState, squares, history);
-    debugger;
 
     if (!tx) {
       console.error('buildCallContractTx fail...')
@@ -278,7 +248,6 @@ class Game extends React.Component {
     }
 
     web3.sendTx(tx).then(txid => {
-      debugger;
 
       squares[i].tx = txid;
       squares[i].n = history.length;
@@ -342,7 +311,7 @@ class Game extends React.Component {
 
     let bet;
     if (game && game.deploy) {
-      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
+      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${game.deploy}`} target="_blank">Bet transaction</a> </div>
     }
 
     let player = server.getCurrentPlayer();
@@ -350,12 +319,12 @@ class Game extends React.Component {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
       if (game && game.lastUtxo) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://whatsonchain.com/tx/${game.lastUtxo.txHash}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
 

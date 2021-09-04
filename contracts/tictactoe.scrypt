@@ -1,47 +1,131 @@
-import "util.scrypt";
+library Util {
+    static const int PubKeyHashLen = 20;
+    static const int OutputValueLen = 8;
+    static function fromLEUnsigned(bytes b) : int {
+        return unpack(b + b'00');
+    }
+    static function toLEUnsigned(int n, int l) : bytes {
+        bytes m = num2bin(n, l + 1);
+        return m[0 : len(m) - 1];
+    }
+
+    static function writeVarint(bytes b) : bytes {
+        int n = len(b);
+
+        bytes header = b'';
+
+        if (n < 0xfd) {
+            header = Util.toLEUnsigned(n, 1);
+        }
+        else if (n < 0x10000) {
+            header = b'fd' + Util.toLEUnsigned(n, 2);
+        }
+        else if (n < 0x100000000) {
+            header = b'fe' + Util.toLEUnsigned(n, 4);
+        }
+        else if (n < 0x10000000000000000) {
+            header = b'ff' + Util.toLEUnsigned(n, 8);
+        }
+
+        return header + b;
+    }
+
+    static function readVarint(bytes b) : bytes {
+        int l = 0;
+        bytes ret = b'';
+        bytes header = b[0 : 1];
+
+        if (header == b'fd') {
+            l = Util.fromLEUnsigned(b[1 : 3]);
+            ret = b[3 : 3 + l];
+        }
+        else if (header == b'fe') {
+            l = Util.fromLEUnsigned(b[1 : 5]);
+            ret = b[5 : 5 + l];
+        }
+        else if (header == b'ff') {
+            l = Util.fromLEUnsigned(b[1 : 9]);
+            ret = b[9 : 9 + l];
+        } else {
+            l = Util.fromLEUnsigned(b[0 : 1]);
+            ret = b[1 : 1 + l];
+        }
+
+        return ret;
+    }
+
+    static function getElemAt(bytes board, int index) : bytes {
+        return board[index : index + 1];
+    } 
+
+    static function setElemAt(bytes board, int index, bytes value) : bytes {
+        return board[ : index] + value + board[index + 1 : ];
+    }
+
+    static function scriptCode(SigHashPreimage preimage) : bytes {
+        return Util.readVarint(preimage[104 : ]);
+    }
+    
+    static function hashOutputs(SigHashPreimage preimage) : bytes {
+        int l = len(preimage);
+        return preimage[l - 40 : l - 8];
+    }
+
+    static function buildPublicKeyHashScript(Ripemd160 pubKeyHash) : bytes {
+        return OpCode.OP_DUP + OpCode.OP_HASH160 + pack(Util.PubKeyHashLen)
+        +
+        pubKeyHash + OpCode.OP_EQUALVERIFY + OpCode.OP_CHECKSIG;
+    }
+
+    static function pubKeyToP2PKH(PubKey pubKey) : bytes {
+        return Util.buildPublicKeyHashScript(hash160(pubKey));
+    }
+
+    static function buildOutput(bytes outputScript, int outputSatoshis) : bytes {
+        return num2bin(outputSatoshis, Util.OutputValueLen) + Util.writeVarint(outputScript);
+    }
+}
+
 
 contract TicTacToe {
     PubKey alice;
     PubKey bob;
-
+    
     static const int TURNLEN = 1;
     static const int BOARDLEN = 9;
     static const bytes EMPTY = b'00';
     static const bytes ALICE = b'01';
     static const bytes BOB = b'02';
 
+    
     public function move(int n, Sig sig, int amount, SigHashPreimage txPreimage) {
+
         require(Tx.checkPreimage(txPreimage));
         require(n >= 0 && n < BOARDLEN);
 
         bytes scriptCode = Util.scriptCode(txPreimage);
         int scriptLen = len(scriptCode);
-
-        int boardStart = scriptLen - BOARDLEN;
-        // state: turn (1 byte) + board (9 bytes)
+		int boardStart = scriptLen - BOARDLEN;
+		
         int turn = unpack(scriptCode[boardStart - TURNLEN : boardStart]);
         bytes board = scriptCode[boardStart : ];
-
-        // not filled
         require(Util.getElemAt(board, n) == EMPTY);
 
         bytes play = turn == 0 ? ALICE : BOB;
         PubKey player = turn == 0 ? this.alice : this.bob;
-
-        // ensure it's player's turn
         require(checkSig(sig, player));
-        // make the move
+
+        //TODO: update state: next turn & next board
         board = Util.setElemAt(board, n, play);
+        turn = 1 - turn;
 
         bytes outputs = b'';
         if (this.won(board, play)) {
-            // winner takes all
             bytes outputScript = Util.pubKeyToP2PKH(player);
             bytes output = Util.buildOutput(outputScript, amount);
             outputs = output;
         }
         else if (this.full(board)) {
-            // draw: equally split, i.e., both outputs have the same amount
             bytes aliceScript = Util.pubKeyToP2PKH(this.alice);
             bytes aliceOutput = Util.buildOutput(aliceScript, amount);
 
@@ -50,8 +134,7 @@ contract TicTacToe {
 
             outputs = aliceOutput + bobOutput;
         } else {
-            // update state: next turn & next board
-            bytes scriptCode_ = scriptCode[ : scriptLen - BOARDLEN - TURNLEN] + num2bin(1 - turn, TURNLEN) + board;
+            bytes scriptCode_ = scriptCode[ : scriptLen - BOARDLEN - TURNLEN] + num2bin(turn, TURNLEN) + board;
             bytes output = Util.buildOutput(scriptCode_, amount);
             outputs = output;
         }
@@ -59,9 +142,9 @@ contract TicTacToe {
         require(hash256(outputs) == Util.hashOutputs(txPreimage));
     }
 
-    // does play win after current move?
+
     function won(bytes board, bytes play) : bool {
-        // three in a row, a column, or a diagnoal
+
         int[8][3] lines = [
         [0, 1, 2],
         [3, 4, 5],
@@ -79,19 +162,19 @@ contract TicTacToe {
             loop (3) : j {
                 line = line && Util.getElemAt(board, lines[i][j]) == play;
             }
-
+            
             anyLine = anyLine || line;
         }
 
         return anyLine;
     }
 
-    // is board full?
+
     function full(bytes board) : bool {
         bool full = true;
-
+        
         loop (BOARDLEN) : i {
-            full = full && Util.getElemAt(board, i) != EMPTY;
+            full = full && Util.getElemAt(board, i) != TicTacToe.EMPTY;
         }
 
         return full;

@@ -6,8 +6,8 @@ export interface UTXO {
   outputIndex: string;
   satoshis: number;
   script: string;
-  addr: string;
-  pubkey: string
+  addr?: string;
+  pubkey?: string
 }
 
 export interface Output {
@@ -63,17 +63,17 @@ export abstract class wallet {
   }
 
   //Dapp use this api to connect to the wallet.
-  abstract requestAccount(name: string, permissions: string[]): Promise<Account>;
+  abstract requestAccount(name: string, permissions: string[]): Promise<any>;
 
   //get wallet balance
   abstract getbalance(): Promise<number>;
 
   //sign raw transaction, returns unlockscript of the p2pkh input if success
-  abstract signRawTransaction(tx: Tx, inputIndex: number, sigHashType: SignType
+  abstract signRawTransaction(rawtx: string, inputIndex: number, sigHashType: SignType, addr: string
   ): Promise<string>;
 
   //get signature for special input
-  abstract getSignature(tx: Tx, inputIndex: number, sigHashType: SignType
+  abstract getSignature(rawtx: string, inputIndex: number, sigHashType: SignType, addr: string
   ): Promise<string>;
 
   //send raw transaction, returns transaction hash if success

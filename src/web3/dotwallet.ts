@@ -1,6 +1,4 @@
-import { Account, NetWork, UTXO, wallet, Tx, SignType } from './wallet';
-import { toHex, bsv, signTx } from 'scryptlib';
-import { signInput, toBsvTx } from './wutils';
+import { NetWork, UTXO, wallet, Tx, SignType } from './wallet';
 import axios from 'axios';
 import { DAPP_API_PATHS, getPlayer, getPlayerByState, LocalStorageKey } from '../utils';
 import Request from '../Request';
@@ -11,17 +9,16 @@ export class DotWallet extends wallet {
   API_DOTWALLET: string;
   CLIENT_ID = 'aa7f349975c72e5ba3178e636728f6b2';
   loginUrl: string;
-  privKey: any;
   sender: any;
 
   constructor(network: NetWork = NetWork.Mainnet) {
     super(network);
-    this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network == NetWork.Regtest ? 'test' : 'main'}`;
+    this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Regtest ? 'test' : 'main'}`;
     // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
-    this.API_DOTWALLET = network == NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
+    this.API_DOTWALLET = network === NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(window.origin)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
     this.loginUrl = loginUrl;
-    this.sender = network == NetWork.Regtest ? {
+    this.sender = network === NetWork.Regtest ? {
       "appid": "test_bsv_coin_regular",
       "user_index": 0
     } : {
@@ -29,18 +26,13 @@ export class DotWallet extends wallet {
       "user_index": 0
     }
 
-    // this.privKey = key ? new bsv.PrivateKey.fromWIF(key) : new bsv.PrivateKey.fromRandom(network);
   }
 
-  requestAccount(name: string, permissions: string[]): Promise<Account> {
-    throw new Error('Method not implemented.');
+  requestAccount(name: string, permissions: string[]): Promise<any> {
+    window.location.href = `${this.loginUrl}&state=${name}`;
+    return Promise.resolve(true);
   }
 
-  auth() {
-    // alice: "cVcptq2P6vT9yHsBNiZfr2kGSHoePGnKGXMjUiCPttoLXNTRQL2w"
-    // bob: "cUjceB1UQ7SBqhSXRYGk8tZe1N3jpsbqKHRkmCXx4bm4qdL1muDb"
-    window.location.href = `${this.loginUrl}&state=${getPlayer()}`;
-  }
 
   code2token = async (code: string) => {
     if (!code) return;
@@ -51,7 +43,7 @@ export class DotWallet extends wallet {
       });
       const { access_token } = data.data;
       if (access_token) {
-        localStorage[`access_token_${getPlayerByState()}`] = access_token;
+        localStorage[LocalStorageKey.accountToken] = access_token;
         const query = getPlayerByState() == 'alice' ? "?player=alice" : "?player=bob";
         window.location.href = `${window.location.origin}${query}`
       }
@@ -71,15 +63,11 @@ export class DotWallet extends wallet {
     }
   }
 
-  async signRawTransactionV2(rawtx: String,
+  async signRawTransaction(rawtx: string,
     inputIndex: number,
     sigHashType: SignType,
-    addr: String,
-    player: String,
+    addr: string
   ): Promise<string> {
-    // const tx_ = toBsvTx(tx);
-
-    // const utxo = tx.inputs[inputIndex].utxo;
 
     const { data } = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_sign_raw_transaction}`, {
       "sender": this.sender,
@@ -89,7 +77,7 @@ export class DotWallet extends wallet {
       addr,
     }, {
       headers: {
-        "player": player
+       
       }
     }
     );
@@ -98,11 +86,10 @@ export class DotWallet extends wallet {
 
 
 
-  async getSignatureV2(rawtx: String,
+  async getSignature(rawtx: string,
     inputIndex: number,
     sigHashType: SignType,
-    addr: String,
-    player: String,
+    addr: string
   ): Promise<string> {
     const { data } = await Request.post(`${this.API_DOTWALLET}${DAPP_API_PATHS.dapp_get_signature}`, {
       "sender": this.sender,
@@ -112,7 +99,7 @@ export class DotWallet extends wallet {
       addr,
     }, {
       headers: {
-        "player": player
+        "player": 'alice'
       }
     });
 
@@ -148,8 +135,6 @@ export class DotWallet extends wallet {
         addr: utxo.addr,
         pubkey: utxo.pubkey,
       } as UTXO;
-      // console.log(_utxo);
-      // debugger;
       return _utxo;
     });
   }
@@ -178,31 +163,5 @@ export class DotWallet extends wallet {
     });
 
     return data.data.public_key;
-  }
-
-
-
-  async getSignature(tx: Tx,
-    inputIndex: number,
-    sigHashType: SignType
-  ): Promise<string> {
-
-
-    const tx_ = toBsvTx(tx);
-    // TODO
-    return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
-  }
-
-  async signRawTransaction(tx: Tx,
-    inputIndex: number,
-    sigHashType: SignType
-  ): Promise<string> {
-
-
-    const tx_ = toBsvTx(tx);
-
-    const utxo = tx.inputs[inputIndex].utxo;
-
-    return signInput(this.privKey, tx_, inputIndex, sigHashType, utxo);
   }
 }

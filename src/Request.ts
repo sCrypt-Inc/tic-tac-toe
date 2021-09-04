@@ -7,14 +7,13 @@ const Request = axios.create({
 
 export const requestInterceptor = (config: AxiosRequestConfig) => {
   const access_token = DotWalletToken.get();
+
+  console.log('access_token', access_token)
   if (access_token) {
     config.headers["Authorization"] = "Bearer " + access_token;
   }
 
-  if(config.headers['player']){
-    config.headers["Authorization"] = "Bearer " + localStorage[`access_token_${config.headers['player']}`];
-    delete config.headers['player'];
-  }
+
 
   return config;
 };
@@ -25,8 +24,8 @@ Request.interceptors.request.use(requestInterceptor, (error) =>
 
 export const responseIntercepter = async (res: AxiosResponse) => {
   if (res && +res.status === 200) {
-    if(+res.data.code == 75000){
-      localStorage.clear();
+    if(+res.data.code === 75000){
+      localStorage.removeItem(DotWalletToken.get() || '')
       alert("Re-login")
       window.location.href = '';
     }

@@ -2,13 +2,12 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { Bytes, PubKey, toHex, newCall } from "scryptlib";
+import { PubKey, toHex } from "scryptlib";
 
-import { web3, SignType } from "./web3";
+import { web3 } from "./web3";
 import Wallet from "./wallet";
-import { useInterval } from "./hooks";
 import server from "./Server";
-import { getPlayer, DotWalletPublicKey } from "./utils";
+import { DotWalletPublicKey } from "./utils";
 
 function App() {
   const [started, updateStart] = useState(false);
@@ -28,8 +27,6 @@ function App() {
         alert("Please fund your wallet address first");
         return;
       }
-      // debugger;
-      // let publicKey = await web3.wallet.getPublicKey({purpose:getPlayer()});
 
       let player = server.getCurrentPlayer();
 
@@ -88,14 +85,14 @@ function App() {
   async function fetchContract(alicePubKey, bobPubKey) {
     if (contractInstance === null && alicePubKey && bobPubKey) {
       let { contractClass: TictactoeContractClass } = await web3.loadContract(
-        // "/tic-tac-toe/tictactoe_desc.json"
-        "/tictactoe_desc.json"
+        "/tic-tac-toe/tictactoe_release_desc.json"
       );
 
-      let c = newCall(TictactoeContractClass, [
+      let c = new TictactoeContractClass(
         new PubKey(toHex(alicePubKey)),
         new PubKey(toHex(bobPubKey)),
-      ]);
+      );
+
       c.setDataPart("00000000000000000000");
       updateContractInstance(c);
       console.log("fetchContract successfully");
@@ -133,13 +130,12 @@ function App() {
     // }
 
     let contract = await fetchContract(game.alicePubKey, game.bobPubKey);
-    debugger;
-    console.log("fetchContract", contract, player);
+
     if (contract != null) {
       web3
-        .deployV2(contract, game.amount)
+        .deploy(contract, game.amount)
         .then(([tx, txid]) => {
-          debugger;
+
           game.lastUtxo = {
             txHash: txid,
             outputIndex: 0,
@@ -164,7 +160,7 @@ function App() {
   useEffect(() => {
     if (!web3.wallet) {
       setTimeout(() => {
-        // alert('Please create your wallet and fund it');
+         alert('Please create your wallet and fund it');
       }, 1000);
     } else {
       let game = server.getGame();
