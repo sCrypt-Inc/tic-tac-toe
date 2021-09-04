@@ -4,7 +4,8 @@ import { bsv, Bytes, Sig, toHex } from 'scryptlib';
 import { web3, Input, SignType } from './web3';
 
 import server from './Server';
-import { getPreimage } from './web3/wutils';
+import { getPreimage, toRawTx, toBsvTx } from './web3/wutils';
+import { DotWalletAddress, DotWalletPublicKey, getPlayer } from './utils';
 
 
 const calculateWinner = (squares) => {
@@ -91,6 +92,19 @@ class Game extends React.Component {
     }).join('');
   }
 
+  calculateOldState(squares) {
+    return (this.state.xIsNext ? '00' : '01') + squares.map(square => {
+
+      if (square && square.label === 'X') {
+        return '01'
+      } else if (square && square.label === 'O') {
+        return '02'
+      } else {
+        return '00';
+      }
+    }).join('');
+  }
+
 
   checkIfValid(i, squares) {
     if (!this.props.game || !this.props.game.lastUtxo) {
@@ -115,16 +129,17 @@ class Game extends React.Component {
   }
 
 
-  async buildCallContractTx(i, newState, squares, history) {
+  async buildCallContractTx(i, newState, oldState, squares, history) {
     let newLockingScript = "";
     let winner = calculateWinner(squares).winner;
     const FEE = 3000;
     let outputs = [];
     let amount = this.props.game.lastUtxo.satoshis - FEE;
     if (winner) {
+      const player = getPlayer();
       // winner is current player
-
-      let address = await web3.wallet.getRawChangeAddress();
+      
+      let address = await DotWalletAddress.get(player);
 
       newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
 
@@ -184,11 +199,26 @@ class Game extends React.Component {
 
     let preimage = getPreimage(tx);
 
-    let sig = await web3.wallet.getSignature(tx, 0, SignType.ALL, true);
+    const addr = DotWalletAddress.get();
+
+    let sig = await web3.wallet.getSignature(toRawTx(tx), 0, SignType.ALL, addr);
+
+    this.props.contractInstance.setDataPart(oldState);
+    
 
     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
     tx.inputs[0].script = unlockScript;
+
+    // we can verify locally before we broadcast the tx, if fail, 
+    // it will print the launch.json in the brower webview developer tool, just copy/paste,
+    // and try launch the sCrypt debugger
+
+    const result = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).verify({ inputSatoshis: this.props.game.lastUtxo.satoshis, tx: toBsvTx(tx) })
+
+    if (!result.success) {
+      throw new Error(result.error)
+    }
 
     return tx;
   }
@@ -196,11 +226,11 @@ class Game extends React.Component {
 
   async handleClick(i) {
 
-
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
+    const oldState = this.calculateOldState(squares);
     if (!this.checkIfValid(i, squares)) {
       console.error('handleClick checkIfValid false...')
       return;
@@ -209,7 +239,8 @@ class Game extends React.Component {
 
     let newState = this.calculateNewState(squares);
 
-    let tx = await this.buildCallContractTx(i, newState, squares, history);
+    // let tx = await this.buildCallContractTx(i, newState, squares, history);
+    let tx = await this.buildCallContractTx(i, newState, oldState, squares, history);
 
     if (!tx) {
       console.error('buildCallContractTx fail...')
@@ -273,9 +304,9 @@ class Game extends React.Component {
 
 
     if (server.getCurrentPlayer() === 'bob') {
-      icon = <div className="bob">Bob<img src="/tic-tac-toe/bob.png"></img></div>
+      icon = <div className="bob">Bob<img src="/bob.png"></img></div>
     } else {
-      icon = <div className="alice">Alice<img src="/tic-tac-toe/alice.jpg"></img></div>
+      icon = <div className="alice">Alice<img src="/alice.jpg"></img></div>
     }
 
     let bet;

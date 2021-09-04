@@ -29,27 +29,27 @@ export class LocalWallet extends wallet {
     return balance.confirmed + balance.unconfirmed;
   }
 
-  async signRawTransaction(tx: Tx,
+  async signRawTransaction(rawtx: string,
     inputIndex: number,
-    sigHashType: SignType
+    sigHashType: SignType,
+    addr: string
   ): Promise<string> {
 
 
-    const tx_ = toBsvTx(tx);
+    let tx_ = new bsv.Transaction(rawtx);
 
-    const utxo = tx.inputs[inputIndex].utxo;
+    const utxo = tx_.inputs[inputIndex].utxo;
 
     return signInput(this.privKey, tx_, inputIndex, sigHashType, utxo);
   }
 
 
-  async getSignature(tx: Tx,
+  async getSignature(rawtx: string,
     inputIndex: number,
-    sigHashType: SignType
-  ): Promise<string> {
+    sigHashType: SignType,
+    addr: string): Promise<string> {
 
-
-    const tx_ = toBsvTx(tx);
+    let tx_ = new bsv.Transaction(rawtx);
 
     return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
 
