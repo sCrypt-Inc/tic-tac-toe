@@ -8,7 +8,6 @@ const Request = axios.create({
 export const requestInterceptor = (config: AxiosRequestConfig) => {
   const access_token = DotWalletToken.get();
 
-  console.log('access_token', access_token)
   if (access_token) {
     config.headers["Authorization"] = "Bearer " + access_token;
   }
