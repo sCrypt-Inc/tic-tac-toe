@@ -16,7 +16,7 @@ export class DotWallet extends wallet {
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Regtest ? 'test' : 'main'}`;
     // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     this.API_DOTWALLET = network === NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
-    const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(window.origin)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
+    const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(`${window.location.origin}/tic-tac-toe`)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
     this.loginUrl = loginUrl;
     this.sender = network === NetWork.Regtest ? {
       "appid": "test_bsv_coin_regular",
