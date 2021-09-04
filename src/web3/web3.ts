@@ -1,10 +1,8 @@
-import { promises } from 'dns';
-import { buildContractClass, buildTypeClasses, ScryptType, SigHashPreimage, bsv, getPreimage, toHex } from 'scryptlib';
-import { Output, UTXO, wallet, Tx, Input, SignType, NetWork } from './wallet';
+import { buildContractClass, buildTypeClasses, ScryptType, bsv } from 'scryptlib';
+import { UTXO, wallet, Tx,  SignType } from './wallet';
 import axios from 'axios';
 import { AbstractContract } from 'scryptlib/dist/contract';
-import { toBsvTx, toRawTx } from './wutils';
-import { LocalWallet } from './localwallet';
+import {toRawTx } from './wutils';
 import { DotWallet } from './dotwallet';
 import { DotWalletAddress, DotWalletPublicKey } from '../utils';
 const WEB3_VERSION = '0.0.1';
@@ -54,17 +52,6 @@ export class web3 {
     
     let publicKey = '';
 
-
-    const tx: Tx = {
-      inputs: [],
-      outputs: []
-    };
-
-    tx.outputs.push({
-      script: contract.lockingScript.toHex(),
-      satoshis: amountInContract 
-    });
-
     const minAmount = amountInContract + FEE;
 
     return wallet.listUnspent(minAmount, {
@@ -75,6 +62,18 @@ export class web3 {
         throw new Error('no utxos');
       }
 
+      
+      const tx: Tx = {
+        inputs: [],
+        outputs: []
+      };
+
+      tx.outputs.push({
+        script: contract.lockingScript.toHex(),
+        satoshis: amountInContract 
+      });
+
+
       //add input which using utxo from alice
       tx.inputs.push(
         {
@@ -83,14 +82,6 @@ export class web3 {
           sequence: 0
         }
       );
-      changeAddress = utxos[0].addr || '';
-      publicKey = utxos[0].pubkey || '';
-
-      DotWalletPublicKey.set(publicKey,'alice');
-      DotWalletAddress.set(changeAddress,'alice');
-
-      DotWalletPublicKey.set(publicKey,'bob');
-      DotWalletAddress.set(changeAddress,'bob');
 
       const changeAmount = utxos[0].satoshis - amountInContract - FEE;
 
@@ -107,15 +98,23 @@ export class web3 {
         }
       );
 
+
+      changeAddress = utxos[0].addr || '';
+      publicKey = utxos[0].pubkey || '';
+
+      DotWalletPublicKey.set(publicKey,'alice');
+      DotWalletAddress.set(changeAddress,'alice');
+
+      DotWalletPublicKey.set(publicKey,'bob');
+      DotWalletAddress.set(changeAddress,'bob');
+
       return tx;
     }).then((tx) => {
       return wallet.getSignature(toRawTx(tx), 0, SignType.ALL,changeAddress).then(signature => {
-          (window as any).bsv = bsv
         const script = new bsv.Script()
         .add(Buffer.from(signature,'hex'))
         .add(new bsv.PublicKey(publicKey).toBuffer())
         .toHex()
-
         tx.inputs[0].script = script;
         return tx;
       })
@@ -168,7 +167,6 @@ export class web3 {
 
   static async deploy(contract: AbstractContract, amountInContract: number): Promise<[Tx, string]> {
     return web3.buildDeployTx(contract, amountInContract).then(async tx => {
-      // debugger;
       return web3.sendTx(tx).then(txid => {
         return [tx, txid];
       })
