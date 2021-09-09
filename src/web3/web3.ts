@@ -62,7 +62,9 @@ export class web3 {
         throw new Error('no utxos');
       }
 
-      
+      changeAddress = utxos[0].addr || '';
+      publicKey = utxos[0].pubkey || '';
+
       const tx: Tx = {
         inputs: [],
         outputs: []
@@ -98,9 +100,6 @@ export class web3 {
         }
       );
 
-
-      changeAddress = utxos[0].addr || '';
-      publicKey = utxos[0].pubkey || '';
 
       DotWalletPublicKey.set(publicKey,'alice');
       DotWalletAddress.set(changeAddress,'alice');
