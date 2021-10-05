@@ -2,7 +2,7 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { PubKey, toHex } from "scryptlib";
+import { Bytes, PubKey, toHex } from "scryptlib";
 
 import { web3 } from "./web3";
 import Wallet from "./wallet";
@@ -91,9 +91,11 @@ function App() {
       let c = new TictactoeContractClass(
         new PubKey(toHex(alicePubKey)),
         new PubKey(toHex(bobPubKey)),
+        true,
+        new Bytes('000000000000000000')
       );
 
-      c.setDataPart("00000000000000000000");
+
       updateContractInstance(c);
       console.log("fetchContract successfully");
       return c;

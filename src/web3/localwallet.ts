@@ -51,7 +51,7 @@ export class LocalWallet extends wallet {
 
     let tx_ = new bsv.Transaction(rawtx);
 
-    return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
+    return toHex(signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script, tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType));
 
   }
 

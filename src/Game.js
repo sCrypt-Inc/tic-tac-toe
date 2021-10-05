@@ -53,7 +53,7 @@ const initialState = {
     },
   ],
   currentStepNumber: 0,
-  xIsNext: true,
+  is_alice_turn: true,
 };
 
 class Game extends React.Component {
@@ -80,7 +80,9 @@ class Game extends React.Component {
 
 
   calculateNewState(squares) {
-    return (!this.state.xIsNext ? '00' : '01') + squares.map(square => {
+
+    this.props.contractInstance.is_alice_turn = !this.state.is_alice_turn;
+    this.props.contractInstance.board = new Bytes(squares.map(square => {
 
       if (square && square.label === 'X') {
         return '01'
@@ -89,11 +91,13 @@ class Game extends React.Component {
       } else {
         return '00';
       }
-    }).join('');
+    }).join(''))
   }
 
   calculateOldState(squares) {
-    return (this.state.xIsNext ? '00' : '01') + squares.map(square => {
+
+    this.props.contractInstance.is_alice_turn = this.state.is_alice_turn;
+    this.props.contractInstance.board = new Bytes(squares.map(square => {
 
       if (square && square.label === 'X') {
         return '01'
@@ -102,11 +106,13 @@ class Game extends React.Component {
       } else {
         return '00';
       }
-    }).join('');
+    }).join(''));
+
+    this.props.contractInstance.commitState();
   }
 
 
-  checkIfValid(i, squares) {
+  updateState(i, squares) {
     if (!this.props.game || !this.props.game.lastUtxo) {
       return false;
     }
@@ -114,23 +120,23 @@ class Game extends React.Component {
     if (calculateWinner(squares).winner || squares[i]) {
       return false;
     }
-    squares[i] = { label: this.state.xIsNext ? 'X' : 'O' };
+    squares[i] = { label: this.state.is_alice_turn ? 'X' : 'O' };
     let player = server.getCurrentPlayer();
 
-    if (player === "alice" && this.state.xIsNext) {
+    if (player === "alice" && this.state.is_alice_turn) {
       return true;
-    } else if (player === "bob" && !this.state.xIsNext) {
+    } else if (player === "bob" && !this.state.is_alice_turn) {
       return true;
     } else {
-      alert(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn `)
-      console.error(`now is ${this.state.xIsNext ? 'Alice' : 'Bob'} turn , but got ${player}`)
+      alert(`now is ${this.state.is_alice_turn ? 'Alice' : 'Bob'} turn `)
+      console.error(`now is ${this.state.is_alice_turn ? 'Alice' : 'Bob'} turn , but got ${player}`)
       return false;
     }
+
   }
 
 
-  async buildCallContractTx(i, newState, oldState, squares, history) {
-    let newLockingScript = "";
+  async buildCallContractTx(i, squares, history) {
     let winner = calculateWinner(squares).winner;
     const FEE = 3000;
     let outputs = [];
@@ -138,14 +144,12 @@ class Game extends React.Component {
     if (winner) {
       const player = getPlayer();
       // winner is current player
-      
-      let address = await DotWalletAddress.get(player);
 
-      newLockingScript = bsv.Script.buildPublicKeyHashOut(address).toHex();
+      let address = await DotWalletAddress.get(player);
 
       outputs.push({
         satoshis: amount,
-        script: newLockingScript
+        script: bsv.Script.buildPublicKeyHashOut(address).toHex()
       })
 
     } else if (history.length >= 9) {
@@ -174,10 +178,9 @@ class Game extends React.Component {
 
     } else {
       //next
-      newLockingScript = [this.props.contractInstance.codePart.toHex(), bsv.Script.fromASM(newState).toHex()].join('');
       outputs.push({
         satoshis: amount,
-        script: newLockingScript
+        script: this.props.contractInstance.lockingScript.toHex()
       })
     }
 
@@ -203,9 +206,6 @@ class Game extends React.Component {
 
     let sig = await web3.wallet.getSignature(toRawTx(tx), 0, SignType.ALL, addr);
 
-    this.props.contractInstance.setDataPart(oldState);
-    
-
     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
     tx.inputs[0].script = unlockScript;
@@ -230,17 +230,17 @@ class Game extends React.Component {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
-    const oldState = this.calculateOldState(squares);
-    if (!this.checkIfValid(i, squares)) {
+    this.calculateOldState(squares);
+    if (!this.updateState(i, squares)) {
       console.error('handleClick checkIfValid false...')
       return;
     }
 
 
-    let newState = this.calculateNewState(squares);
+    this.calculateNewState(squares);
 
     // let tx = await this.buildCallContractTx(i, newState, squares, history);
-    let tx = await this.buildCallContractTx(i, newState, oldState, squares, history);
+    let tx = await this.buildCallContractTx(i, squares, history);
 
     if (!tx) {
       console.error('buildCallContractTx fail...')
@@ -259,7 +259,7 @@ class Game extends React.Component {
             stepNumber: history.length,
           },
         ]),
-        xIsNext: !this.state.xIsNext,
+        is_alice_turn: !this.state.is_alice_turn,
         currentStepNumber: history.length,
       };
 
@@ -328,7 +328,7 @@ class Game extends React.Component {
       }
     } else {
 
-      let nexter = this.state.xIsNext ? 'Alice' : 'Bob';
+      let nexter = this.state.is_alice_turn ? 'Alice' : 'Bob';
 
       status = `Next player: ${nexter}`;
     }

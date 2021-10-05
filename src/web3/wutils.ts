@@ -64,5 +64,5 @@ export function toRawTx(tx: Tx) {
 
 export function getPreimage(tx: Tx, inputIndex = 0, sigHashType: SignType = SignType.ALL): SigHashPreimage {
   const bsvTx = toBsvTx(tx);
-  return getPreimage_(bsvTx, bsv.Script.fromHex(tx.inputs[inputIndex].utxo.script).toASM(), tx.inputs[inputIndex].utxo.satoshis, inputIndex, sigHashType);
+  return getPreimage_(bsvTx, bsv.Script.fromHex(tx.inputs[inputIndex].utxo.script), tx.inputs[inputIndex].utxo.satoshis, inputIndex, sigHashType);
 }
