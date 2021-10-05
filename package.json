@@ -17,7 +17,7 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.3",
-    "scryptlib": "^0.5.0",
+    "scryptlib": "^0.6.0",
     "typescript": "^4.2.3",
     "web-vitals": "^1.1.0"
   },
@@ -27,7 +27,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "single-test": "mocha --reporter spec --timeout 120000",
+    "single-test": "mocha --reporter spec --timeout 120000 ",
+    "td": "mocha --reporter spec test/**/*.js --timeout 600000",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

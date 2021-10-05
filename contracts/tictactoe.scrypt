@@ -1,16 +1,14 @@
 import "util.scrypt";
 
-struct State {
-    int turn;
-    bytes board;
-}
-
 contract TicTacToe {
     PubKey alice;
     PubKey bob;
 
     @state
-    State state;
+    bool is_alice_turn;
+
+    @state
+    bytes board;
 
     static const int TURNLEN = 1;
     static const int BOARDLEN = 9;
@@ -24,24 +22,24 @@ contract TicTacToe {
         require(n >= 0 && n < BOARDLEN);
 
         // not filled
-        require(Util.getElemAt(this.state.board, n) == EMPTY);
+        require(Util.getElemAt(this.board, n) == EMPTY);
 
-        bytes play = this.state.turn == 0 ? ALICE : BOB;
-        PubKey player = this.state.turn == 0 ? this.alice : this.bob;
+        bytes play = this.is_alice_turn ? ALICE : BOB;
+        PubKey player = this.is_alice_turn ? this.alice : this.bob;
 
         // ensure it's player's turn
         require(checkSig(sig, player));
         // make the move
-        this.state.board = Util.setElemAt(this.state.board, n, play);
-        this.state.turn = 1 - this.state.turn;
+        this.board = Util.setElemAt(this.board, n, play);
+        this.is_alice_turn = !this.is_alice_turn;
 
         bytes outputs = b'';
-        if (this.won(board, play)) {
+        if (this.won(this.board, play)) {
             bytes outputScript = Util.pubKeyToP2PKH(player);
             bytes output = Util.buildOutput(outputScript, amount);
             outputs = output;
         }
-        else if (this.full(board)) {
+        else if (this.full(this.board)) {
             bytes aliceScript = Util.pubKeyToP2PKH(this.alice);
             bytes aliceOutput = Util.buildOutput(aliceScript, amount);
 
@@ -51,7 +49,7 @@ contract TicTacToe {
             outputs = aliceOutput + bobOutput;
         }
         else {
-            bytes scriptCode_ =  this.createScript();
+            bytes scriptCode_ = this.getStateScript();
             bytes output = Util.buildOutput(scriptCode_, amount);
             outputs = output;
         }

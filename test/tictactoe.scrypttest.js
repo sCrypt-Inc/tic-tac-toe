@@ -42,28 +42,29 @@ const publicKeyBob = bsv.PublicKey.fromPrivateKey(privateKeyBob)
 
 const Tictactoe = buildContractClass(runCompile('tictactoe.scrypt'));
 
-game = new Tictactoe(new PubKey(toHex(publicKeyAlice)), new PubKey(toHex(publicKeyBob)));
+let game = new Tictactoe(new PubKey(toHex(publicKeyAlice)), new PubKey(toHex(publicKeyBob)), true, new Bytes("000000000000000000"));
 
 
 
 describe('Test sCrypt contract Tictactoe In Javascript', () => {
-  let result, preimage, sig, prevLockingScript
+  let result, preimage, sig
 
+  function reset() {
+    game.board = new Bytes('000000000000000000');
+    game.is_alice_turn = true;
+    game.commitState();
+  }
 
-  beforeEach(() => {
-    let state = new Bytes('00000000000000000000').toASM();
-    game.setDataPart(state)
-  });
-
-  function moveScript(newState) {
-    const state = new Bytes(newState).toASM();
-    const newLockingScript = [game.codePart.toASM(), state].join(' ');
-    return bsv.Script.fromASM(newLockingScript)
+  function moveScript(is_alice_turn, board) {
+    game.board = new Bytes(board);
+    game.is_alice_turn = is_alice_turn
+    return game.lockingScript;
   }
 
   function testMove(isAliceTurn, n, outputScript, expected) {
     const privateKey = isAliceTurn ? privateKeyAlice : privateKeyBob;
-    prevLockingScript = game.lockingScript.toASM();
+
+
 
     const tx = newTx();
 
@@ -72,10 +73,9 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
       satoshis: 10000
     }))
 
+    preimage = getPreimage(tx, game.prevLockingScript, inputSatoshis);
 
-    preimage = getPreimage(tx, prevLockingScript, inputSatoshis);
-
-    sig = signTx(tx, privateKey, prevLockingScript, inputSatoshis)
+    sig = signTx(tx, privateKey, game.prevLockingScript, inputSatoshis)
 
     const context = { tx, inputIndex, inputSatoshis }
 
@@ -85,13 +85,13 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
       expect(result.success, result.error).to.be.false;
     } else {
       expect(result.success, result.error).to.be.true;
+      game.commitState();
     }
 
   }
 
   function testMoveNobodyWin(isAliceTurn, n, outputScript0, outputScript1) {
     const privateKey = isAliceTurn ? privateKeyAlice : privateKeyBob;
-    prevLockingScript = game.lockingScript.toASM();
 
     const tx = newTx();
 
@@ -106,9 +106,9 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
     }))
 
 
-    preimage = getPreimage(tx, prevLockingScript, inputSatoshis);
+    preimage = getPreimage(tx, game.prevLockingScript, inputSatoshis);
 
-    sig = signTx(tx, privateKey, prevLockingScript, inputSatoshis)
+    sig = signTx(tx, privateKey, game.prevLockingScript, inputSatoshis)
 
     const context = { tx, inputIndex, inputSatoshis }
 
@@ -117,25 +117,21 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
   }
 
   it('One full round where Alice wins', () => {
+
+
     // Alice places an X at 0-th cell
-    state = '01010000000000000000';
-    testMove(true, 0, moveScript(state))
-    game.setDataPart(state)
+    testMove(true, 0, moveScript(false, "010000000000000000"))
 
     // Bob places an O at 4-th cell
-    state = '00010000000200000000';
-    testMove(false, 4, moveScript(state))
-    game.setDataPart(state)
+    testMove(false, 4, moveScript(true, '010000000200000000'))
 
-    // Alice places an X at 1-th cell
-    state = '01010100000200000000';
-    testMove(true, 1, moveScript(state))
-    game.setDataPart(state)
 
-    // Bob places an O at 8-th cell
-    state = '00010100000200000002';
-    testMove(false, 8, moveScript(state))
-    game.setDataPart(state)
+    // // Alice places an X at 1-th cell
+    testMove(true, 1, moveScript(false, '010100000200000000'))
+
+    // // Bob places an O at 8-th cell
+    testMove(false, 8, moveScript(true, '010100000200000002'))
+    // game.setDataPart(state)
 
     // Alice places an X at 2-th cell and wins
     testMove(true, 2, bsv.Script.buildPublicKeyHashOut(privateKeyAlice.toAddress()));
@@ -143,75 +139,58 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
 
 
   it('One full round where nobody wins', () => {
+
+    reset();
     // Alice places an X at 0-th cell
-    state = '01010000000000000000';
-    testMove(true, 0, moveScript(state))
-    game.setDataPart(state)
+    testMove(true, 0, moveScript(false, '010000000000000000'))
 
-    // Bob places an O at 2-th cell
-    state = '00010002000000000000';
-    testMove(false, 2, moveScript(state))
-    game.setDataPart(state)
+    // // Bob places an O at 2-th cell
+    testMove(false, 2, moveScript(true, '010002000000000000'))
 
-    // Alice places an X at 1-th cell
-    state = '01010102000000000000';
-    testMove(true, 1, moveScript(state))
-    game.setDataPart(state)
+    // // Alice places an X at 1-th cell
+    testMove(true, 1, moveScript(false, '010102000000000000'))
+    // game.setDataPart(state)
 
-    // Bob places an O at 3-th cell
-    state = '00010102020000000000';
-    testMove(false, 3, moveScript(state))
-    game.setDataPart(state)
+    // // Bob places an O at 3-th cell
+    testMove(false, 3, moveScript(true, '010102020000000000'))
 
 
-    // Alice places an X at 5-th cell
-    state = '01010102020001000000';
-    testMove(true, 5, moveScript(state))
-    game.setDataPart(state)
+    // // Alice places an X at 5-th cell
+    testMove(true, 5, moveScript(false, '010102020001000000'))
 
-    // Bob places an O at 4-th cell
-    state = '00010102020201000000';
-    testMove(false, 4, moveScript(state))
-    game.setDataPart(state)
+    // // Bob places an O at 4-th cell
+    testMove(false, 4, moveScript(true, '010102020201000000'))
 
 
-    // Alice places an X at 6-th cell
-    state = '01010102020201010000';
-    testMove(true, 6, moveScript(state))
-    game.setDataPart(state)
+    // // Alice places an X at 6-th cell
+    testMove(true, 6, moveScript(false, '010102020201010000'))
 
 
-    // Bob places an O at 8-th cell
-    state = '00010102020201010002';
-    testMove(false, 8, moveScript(state))
-    game.setDataPart(state)
+    // // Bob places an O at 8-th cell
+    testMove(false, 8, moveScript(true, '010102020201010002'))
 
 
-    // Alice places an X at 7-th cell and nobody wins
+    // // Alice places an X at 7-th cell and nobody wins
     testMoveNobodyWin(true, 7, bsv.Script.buildPublicKeyHashOut(privateKeyAlice.toAddress()), bsv.Script.buildPublicKeyHashOut(privateKeyBob.toAddress()));
   });
 
 
   it('should fail if it\'s not alice turn', () => {
     // Alice places an X at 0-th cell
-    state = '01010000000000000000';
-    testMove(true, 0, moveScript(state))
-    game.setDataPart(state)
+    reset();
+    testMove(true, 0, moveScript(false, '010000000000000000'))
 
     // Alice places an X at 1-th cell
-    state = '01010100000000000000';
-    testMove(true, 1, moveScript(state), false)
+    testMove(true, 1, moveScript(true, '010100000000000000'), false)
   })
 
   it('should fail if it exceeds the board', () => {
+    reset();
     // Alice places an X at 0-th cell
-    state = '01010000000000000000';
-    testMove(true, 0, moveScript(state))
-    game.setDataPart(state)
+    testMove(true, 0, moveScript(false, '010000000000000000'))
 
     // Bob places an O exceeds the board
-    state = '00010000000000000000';
-    testMove(true, 11, moveScript(state), false)
+    testMove(true, 11, moveScript(true, '010000000000000000'), false)
   })
 
 
