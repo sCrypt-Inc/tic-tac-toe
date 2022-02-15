@@ -24,6 +24,7 @@ Request.interceptors.request.use(requestInterceptor, (error) =>
 export const responseIntercepter = async (res: AxiosResponse) => {
   if (res && +res.status === 200) {
     if(+res.data.code === 75000){
+      console.error(res)
       localStorage.clear()
       alert("Re-login")
       window.location.href = '';

@@ -73,7 +73,7 @@ export abstract class wallet {
   ): Promise<string>;
 
   //get signature for special input
-  abstract getSignature(rawtx: string, inputIndex: number, sigHashType: SignType, addr: string
+  abstract getSignature(rawtx: string, inputIndex: number, inputAmount: number, inputScript: string, sigHashType: SignType, addr: string
   ): Promise<string>;
 
   //send raw transaction, returns transaction hash if success

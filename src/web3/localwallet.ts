@@ -46,12 +46,16 @@ export class LocalWallet extends wallet {
 
   async getSignature(rawtx: string,
     inputIndex: number,
+    inputAmount: number,
+    inputScript: string, 
     sigHashType: SignType,
     addr: string): Promise<string> {
 
     let tx_ = new bsv.Transaction(rawtx);
 
-    return toHex(signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script, tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType));
+    let script = new bsv.Script.fromHex(inputScript);
+
+    return toHex(signTx(tx_, this.privKey, script, inputAmount, inputIndex, sigHashType));
 
   }
 
