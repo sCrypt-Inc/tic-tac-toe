@@ -7,12 +7,13 @@ import Request from '../Request';
 export class DotWallet extends wallet {
   API_PREFIX: string;
   API_DOTWALLET: string;
-  CLIENT_ID = '45d038e26c7259538edc3c672e97cac9';
+  CLIENT_ID = 'b02425bfc60c86e8dc1fc0243a005882';
   loginUrl: string;
   sender: any;
 
   constructor(network: NetWork = NetWork.Mainnet) {
     super(network);
+    console.log('new DotWallet')
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Regtest ? 'test' : 'main'}`;
     // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     this.API_DOTWALLET = network === NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
@@ -41,6 +42,10 @@ export class DotWallet extends wallet {
         code,
         redirect_uri: `${window.location.origin}/tic-tac-toe`
       });
+
+      console.log('redirect_uri', `${window.location.origin}/tic-tac-toe`)
+
+      console.log('code2token', data)
       const { access_token } = data.data;
       if (access_token) {
         localStorage[LocalStorageKey.accountToken] = access_token;
@@ -48,7 +53,7 @@ export class DotWallet extends wallet {
         window.location.href = `${window.location.origin}/tic-tac-toe${query}`
       }
     } catch (error) {
-      window.location.href = `${window.location.origin}/tic-tac-toe`
+      console.error('code2token error', error)
     }
   };
 
@@ -88,6 +93,8 @@ export class DotWallet extends wallet {
 
   async getSignature(rawtx: string,
     inputIndex: number,
+    inputAmount: number,
+    inputScript: string, 
     sigHashType: SignType,
     addr: string
   ): Promise<string> {

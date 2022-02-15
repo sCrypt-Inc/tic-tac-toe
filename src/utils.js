@@ -57,7 +57,7 @@ export const DotWalletToken = {
   },
 };
 
-export const DotWalletPublicKey = {
+export const PlayerPublicKey = {
   get: (player) => {
     if(player){
       return localStorage[`public_key_${player}`];
@@ -82,7 +82,7 @@ export const DotWalletPublicKey = {
   },
 };
 
-export const DotWalletAddress = {
+export const PlayerAddress = {
   get: (player) => {
     if(player){
       return localStorage[`address_${player}`];

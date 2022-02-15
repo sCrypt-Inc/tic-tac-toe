@@ -2,12 +2,12 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { Bytes, PubKey, toHex } from "scryptlib";
+import { Bytes, PubKey, toHex, bsv } from "scryptlib";
 
 import { web3 } from "./web3";
 import Wallet from "./wallet";
 import server from "./Server";
-import { DotWalletPublicKey } from "./utils";
+import { PlayerPublicKey, PlayerAddress } from "./utils";
 
 function App() {
   const [started, updateStart] = useState(false);
@@ -46,11 +46,11 @@ function App() {
 
       if (player === "alice") {
         Object.assign(game, {
-          alicePubKey: DotWalletPublicKey.get("alice"),
+          alicePubKey: PlayerPublicKey.get("alice"),
         });
       } else {
         Object.assign(game, {
-          bobPubKey: DotWalletPublicKey.get("bob"),
+          bobPubKey: PlayerPublicKey.get("bob"),
         });
       }
 
@@ -103,6 +103,22 @@ function App() {
     return contractInstance;
   }
 
+  function setPlayersPublicKey() {
+    console.log('setPlayersPublicKey ...')
+    let wallet = web3.wallet
+
+    return wallet.getPublicKey().then(async (publicKeyStr) => {
+      let publicKey = bsv.PublicKey.fromHex(publicKeyStr)
+
+      PlayerPublicKey.set(publicKeyStr,'alice');
+      PlayerAddress.set(publicKey.toAddress(),'alice');
+
+      PlayerPublicKey.set(publicKeyStr,'bob');
+      PlayerAddress.set(publicKey.toAddress(),'bob');
+    })
+  }
+
+
   async function joinGame(game) {
     console.log("joinGame...", game);
 
@@ -115,21 +131,17 @@ function App() {
       return;
     }
 
-    await web3.setAllPublicKey(20000);
 
-    let player = server.getCurrentPlayer();
-
-    // if (player === "alice") {
     Object.assign(game, {
-      alicePubKey: DotWalletPublicKey.get("alice"),
+      alicePubKey: PlayerPublicKey.get("alice"),
       player: "alice",
     });
-    // } else {
     Object.assign(game, {
-      bobPubKey: DotWalletPublicKey.get("bob"),
+      bobPubKey: PlayerPublicKey.get("bob"),
       player: "bob",
     });
-    // }
+
+    
 
     let contract = await fetchContract(game.alicePubKey, game.bobPubKey);
 
@@ -159,30 +171,32 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    if (!web3.wallet) {
+  async function startGame() {
 
-    } else {
-      let game = server.getGame();
 
-      if (game && game.lastUtxo) {
-        updateStart(true);
-      }
+    if(started) {
+      console.log('already started')
+      return;
+    }
+    console.log('startGame...')
+    await setPlayersPublicKey();
 
-      if (game && game.alicePubKey && game.bobPubKey) {
-        fetchContract(game.alicePubKey, game.bobPubKey);
-      }
-
-      // let alicePrivateKey = server.getAlicePrivateKey();
-      // let bobPrivateKey = server.getBobPrivateKey();
-      // if (game && !game.deploy && alicePrivateKey && bobPrivateKey) {
-      //   joinGame(game, alicePrivateKey, bobPrivateKey)
-      // }
-      if (game && !game.deploy) {
-        joinGame(game);
-      }
+    let game = server.getGame();
+    if (game && game.lastUtxo) {
+      updateStart(true);
     }
 
+    if (game && game.alicePubKey && game.bobPubKey) {
+      fetchContract(game.alicePubKey, game.bobPubKey);
+    }
+
+    if (game && !game.deploy) {
+      joinGame(game);
+    }
+
+  }
+
+  useEffect(() => {
     server.addDeployedListener(onDeployed);
     server.addNextListener(onNext);
     return () => {
@@ -206,7 +220,7 @@ function App() {
 
         <Game game={game} contractInstance={contractInstance} />
 
-        <Wallet></Wallet>
+        <Wallet startGame={startGame}></Wallet>
       </header>
     </div>
   );

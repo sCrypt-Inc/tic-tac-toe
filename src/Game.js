@@ -5,7 +5,7 @@ import { web3, Input, SignType } from './web3';
 
 import server from './Server';
 import { getPreimage, toRawTx, toBsvTx } from './web3/wutils';
-import { DotWalletAddress, DotWalletPublicKey, getPlayer } from './utils';
+import { PlayerAddress, PlayerPublicKey, getPlayer } from './utils';
 
 
 const calculateWinner = (squares) => {
@@ -79,19 +79,20 @@ class Game extends React.Component {
   }
 
 
-  calculateNewState(squares) {
+  getNewStateScript(squares) {
+    return this.props.contractInstance.getNewStateScript({
+      is_alice_turn: !this.state.is_alice_turn,
+      board: new Bytes(squares.map(square => {
 
-    this.props.contractInstance.is_alice_turn = !this.state.is_alice_turn;
-    this.props.contractInstance.board = new Bytes(squares.map(square => {
-
-      if (square && square.label === 'X') {
-        return '01'
-      } else if (square && square.label === 'O') {
-        return '02'
-      } else {
-        return '00';
-      }
-    }).join(''))
+        if (square && square.label === 'X') {
+          return '01'
+        } else if (square && square.label === 'O') {
+          return '02'
+        } else {
+          return '00';
+        }
+      }).join(''))
+    })
   }
 
   calculateOldState(squares) {
@@ -107,8 +108,6 @@ class Game extends React.Component {
         return '00';
       }
     }).join(''));
-
-    this.props.contractInstance.commitState();
   }
 
 
@@ -145,7 +144,7 @@ class Game extends React.Component {
       const player = getPlayer();
       // winner is current player
 
-      let address = await DotWalletAddress.get(player);
+      let address = await PlayerAddress.get(player);
 
       outputs.push({
         satoshis: amount,
@@ -178,9 +177,10 @@ class Game extends React.Component {
 
     } else {
       //next
+      const newLockingScript = this.getNewStateScript(squares);
       outputs.push({
         satoshis: amount,
-        script: this.props.contractInstance.lockingScript.toHex()
+        script: newLockingScript.toHex()
       })
     }
 
@@ -202,9 +202,10 @@ class Game extends React.Component {
 
     let preimage = getPreimage(tx);
 
-    const addr = DotWalletAddress.get();
+    const addr = PlayerAddress.get();
 
-    let sig = await web3.wallet.getSignature(toRawTx(tx), 0, SignType.ALL, addr);
+    let sig = await web3.wallet.getSignature(toRawTx(tx), 0,  tx.inputs[0].utxo.satoshis,
+       tx.inputs[0].utxo.script, SignType.ALL, addr);
 
     let unlockScript = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).toHex();
 
@@ -235,9 +236,6 @@ class Game extends React.Component {
       console.error('handleClick checkIfValid false...')
       return;
     }
-
-
-    this.calculateNewState(squares);
 
     // let tx = await this.buildCallContractTx(i, newState, squares, history);
     let tx = await this.buildCallContractTx(i, squares, history);

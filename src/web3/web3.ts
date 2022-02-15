@@ -3,8 +3,6 @@ import { UTXO, wallet, Tx,  SignType } from './wallet';
 import axios from 'axios';
 import { AbstractContract } from 'scryptlib/dist/contract';
 import {toRawTx } from './wutils';
-import { DotWallet } from './dotwallet';
-import { DotWalletAddress, DotWalletPublicKey } from '../utils';
 const WEB3_VERSION = '0.0.1';
 
 const FEE = 2000;
@@ -46,24 +44,20 @@ export class web3 {
   
   static async buildDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
 
-    let wallet = new DotWallet();
+    let wallet = web3.wallet
 
-    let changeAddress = '';
+    let changeAddress = await web3.wallet.getRawChangeAddress();
     
-    let publicKey = '';
+    let publicKey = await web3.wallet.getPublicKey();
 
     const minAmount = amountInContract + FEE;
 
     return wallet.listUnspent(minAmount, {
       purpose: 'alice'
     }).then(async (utxos: UTXO[]) => {
-
       if (utxos.length === 0) {
         throw new Error('no utxos');
       }
-
-      changeAddress = utxos[0].addr || '';
-      publicKey = utxos[0].pubkey || '';
 
       const tx: Tx = {
         inputs: [],
@@ -100,16 +94,11 @@ export class web3 {
         }
       );
 
-
-      DotWalletPublicKey.set(publicKey,'alice');
-      DotWalletAddress.set(changeAddress,'alice');
-
-      DotWalletPublicKey.set(publicKey,'bob');
-      DotWalletAddress.set(changeAddress,'bob');
-
       return tx;
     }).then((tx) => {
-      return wallet.getSignature(toRawTx(tx), 0, SignType.ALL,changeAddress).then(signature => {
+      const utxo = tx.inputs[0].utxo;
+      return wallet.getSignature(toRawTx(tx), 0, utxo.satoshis, utxo.script, SignType.ALL,changeAddress).then(signature => {
+        console.log('getSignature', signature, publicKey)
         const script = new bsv.Script()
         .add(Buffer.from(signature,'hex'))
         .add(new bsv.PublicKey(publicKey).toBuffer())
@@ -120,40 +109,6 @@ export class web3 {
     })
   }
 
-  static async setAllPublicKey(amountInContract: number): Promise<void> {
-
-    let wallet = new DotWallet();
-
-    let changeAddress = '';
-    let publicKey = '';
-
-    const minAmount = amountInContract + FEE;
-
-    return wallet.listUnspent(minAmount, {
-      purpose: 'alice'
-    }).then(async (utxos: UTXO[]) => {
-
-      if (utxos.length === 0) {
-        throw new Error('no utxos');
-      }
-
-      changeAddress = utxos[0].addr || '';
-      publicKey = utxos[0].pubkey || '';
-
-      DotWalletPublicKey.set(publicKey,'alice');
-      DotWalletAddress.set(changeAddress,'alice');
-
-      DotWalletPublicKey.set(publicKey,'bob');
-      DotWalletAddress.set(changeAddress,'bob');
-
-      const changeAmount = utxos[0].satoshis - amountInContract - FEE;
-
-      if (changeAmount <= 0) {
-        throw new Error('fund is not enough');
-      }
-
-    })
-  }
 
 
   static async sendRawTx(rawTx: string): Promise<string> {
