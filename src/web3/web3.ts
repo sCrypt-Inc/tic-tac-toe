@@ -42,13 +42,11 @@ export class web3 {
 
 
   
-  static async buildDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
+  static async buildDeployTx(contract: AbstractContract, amountInContract: number, publicKey: string): Promise<Tx> {
 
     let wallet = web3.wallet
 
     let changeAddress = await web3.wallet.getRawChangeAddress();
-    
-    let publicKey = await web3.wallet.getPublicKey();
 
     const minAmount = amountInContract + FEE;
 
@@ -97,11 +95,15 @@ export class web3 {
       return tx;
     }).then((tx) => {
       const utxo = tx.inputs[0].utxo;
-      return wallet.getSignature(toRawTx(tx), 0, utxo.satoshis, utxo.script, SignType.ALL,changeAddress).then(signature => {
+
+      let pubKey = bsv.PublicKey.fromHex(publicKey)
+      let address = `${pubKey.toAddress()}`
+      console.log('signature address', address)
+      return wallet.getSignature(toRawTx(tx), 0, utxo.satoshis, utxo.script, SignType.ALL, address).then(signature => {
         console.log('getSignature', signature, publicKey)
         const script = new bsv.Script()
         .add(Buffer.from(signature,'hex'))
-        .add(new bsv.PublicKey(publicKey).toBuffer())
+        .add(pubKey.toBuffer())
         .toHex()
         tx.inputs[0].script = script;
         return tx;
@@ -119,8 +121,8 @@ export class web3 {
     return web3.wallet.sendRawTransaction(toRawTx(tx));
   }
 
-  static async deploy(contract: AbstractContract, amountInContract: number): Promise<[Tx, string]> {
-    return web3.buildDeployTx(contract, amountInContract).then(async tx => {
+  static async deploy(contract: AbstractContract, amountInContract: number, pubkey: string): Promise<[Tx, string]> {
+    return web3.buildDeployTx(contract, amountInContract, pubkey).then(async tx => {
       return web3.sendTx(tx).then(txid => {
         return [tx, txid];
       })

@@ -167,7 +167,7 @@ function App() {
 
     if (contract != null) {
       web3
-        .deploy(contract, game.amount)
+        .deploy(contract, game.amount, PlayerPublicKey.get("bob"))
         .then(([tx, txid]) => {
 
           game.lastUtxo = {

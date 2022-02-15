@@ -43,9 +43,7 @@ export class DotWallet extends wallet {
         redirect_uri: `${window.location.origin}/tic-tac-toe`
       });
 
-      console.log('redirect_uri', `${window.location.origin}/tic-tac-toe`)
 
-      console.log('code2token', data)
       const { access_token } = data.data;
       if (access_token) {
         localStorage[LocalStorageKey.accountToken] = access_token;
