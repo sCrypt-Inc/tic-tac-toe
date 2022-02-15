@@ -15,13 +15,23 @@ export class Sensilet extends wallet {
       console.log('Sensilet is installed!');
       this.sensilet = (window as any).sensilet 
     } else {
-      alert("sensilet is not installed");
-      window.location.href = "https://sensilet.com/";
+      console.warn("sensilet is not installed");
     }
   }
 
   requestAccount(name: string, permissions: string[]): Promise<any> {
-    console.log('requestAccount')
+
+    if(!this.sensilet) {
+      if(typeof (window as any).sensilet === 'undefined') {
+        alert("sensilet is not installed");
+         window.open("https://sensilet.com/", '_blank');
+      } else  {
+        console.log('Sensilet is installed!');
+        this.sensilet = (window as any).sensilet 
+        return this.sensilet.requestAccount()
+      }
+    }
+
     return this.sensilet.requestAccount()
   }
 
@@ -43,8 +53,8 @@ export class Sensilet extends wallet {
 
   async getbalance(): Promise<number> {
     try {
-      console.log(Sensilet.DEBUG_TAG, 'getbalance')
       let res = await this.sensilet.getBsvBalance();
+      console.log(Sensilet.DEBUG_TAG, 'getbalance', res.balance)
       return Promise.resolve(res.balance.total);
     } catch (error) {
       console.error('getbalance error', error);

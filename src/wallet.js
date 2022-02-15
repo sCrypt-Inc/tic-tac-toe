@@ -4,7 +4,6 @@ import { web3, DotWallet} from './web3';
 import server from './Server';
 import {getCode, getPlayer, PlayerPublicKey, PlayerAddress} from './utils';
 import { Sensilet } from './web3/sensilet';
-import { Bytes, PubKey, toHex, bsv } from "scryptlib";
 const Wallet = props => {
     const [balance, setBalance] = useState(0)
     const [authed, setAuth] = useState(false)
@@ -21,31 +20,37 @@ const Wallet = props => {
 
     useEffect(async () => {
 
-        if (!web3.wallet) {
-            if (server.getAccessToken()) {
-                const dotwallet = new DotWallet()
-                web3.setWallet(dotwallet);
-                props.startGame()
-                setAuth(true)
-            } else {
-
-                const sensilet = new Sensilet();
-                const isConnect = await sensilet.isConnect();
-
-                if(isConnect) {
-                    web3.setWallet(sensilet);
-                    console.log('..... setAuth')
+        const id = setTimeout(async () => {
+            
+            if (!web3.wallet) {
+                if (server.getAccessToken()) {
+                    const dotwallet = new DotWallet()
+                    web3.setWallet(dotwallet);
                     props.startGame()
                     setAuth(true)
+                } else {
+    
+                    const sensilet = new Sensilet();
+                    const isConnect = await sensilet.isConnect();
+    
+                    if(isConnect) {
+                        web3.setWallet(sensilet);
+                        console.log('..... setAuth')
+                        props.startGame()
+                        setAuth(true)
+                    }
                 }
             }
-        }  
 
-        if(web3.wallet) {
-            web3.wallet.getbalance().then(balance => {
-                setBalance(balance)
-            })
-        }
+            if(web3.wallet) {
+                web3.wallet.getbalance().then(balance => {
+                    setBalance(balance)
+                })
+            }
+
+        }, 1000)
+
+        return () => clearTimeout(id)
 
     },[]);
 
@@ -77,9 +82,11 @@ const Wallet = props => {
 
         if(isConnect) {
             await sensilet.exitAccount();
-            web3.setWallet(undefined);
-            setAuth(false)
         }
+
+        web3.setWallet(undefined);
+        setAuth(false)
+        window.location.reload()
     }
 
 

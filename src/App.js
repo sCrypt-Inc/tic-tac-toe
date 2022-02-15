@@ -4,10 +4,11 @@ import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import { Bytes, PubKey, toHex, bsv } from "scryptlib";
 
-import { web3 } from "./web3";
+import { DotWallet, web3, UTXO } from "./web3";
 import Wallet from "./wallet";
 import server from "./Server";
 import { PlayerPublicKey, PlayerAddress } from "./utils";
+import { Sensilet } from "./web3/sensilet";
 
 function App() {
   const [started, updateStart] = useState(false);
@@ -107,15 +108,34 @@ function App() {
     console.log('setPlayersPublicKey ...')
     let wallet = web3.wallet
 
-    return wallet.getPublicKey().then(async (publicKeyStr) => {
-      let publicKey = bsv.PublicKey.fromHex(publicKeyStr)
+    if (wallet instanceof Sensilet) {
+      return wallet.getPublicKey().then(async (publicKeyStr) => {
+        let publicKey = bsv.PublicKey.fromHex(publicKeyStr)
 
-      PlayerPublicKey.set(publicKeyStr,'alice');
-      PlayerAddress.set(publicKey.toAddress(),'alice');
+        PlayerPublicKey.set(publicKeyStr, 'alice');
+        PlayerAddress.set(publicKey.toAddress(), 'alice');
 
-      PlayerPublicKey.set(publicKeyStr,'bob');
-      PlayerAddress.set(publicKey.toAddress(),'bob');
-    })
+        PlayerPublicKey.set(publicKeyStr, 'bob');
+        PlayerAddress.set(publicKey.toAddress(), 'bob');
+      })
+    } else if (wallet instanceof DotWallet) {
+      return wallet.listUnspent(20000, {
+        purpose: 'alice'
+      }).then(async (utxos) => {
+
+        if (utxos.length === 0) {
+          throw new Error('no utxos');
+        }
+
+        let publicKey = bsv.PublicKey.fromHex(utxos[0].pubkey)
+
+        PlayerPublicKey.set(utxos[0].pubkey, 'alice');
+        PlayerAddress.set(publicKey.toAddress(), 'alice');
+
+        PlayerPublicKey.set(utxos[0].pubkey, 'bob');
+        PlayerAddress.set(publicKey.toAddress(), 'bob');
+      })
+    }
   }
 
 
@@ -141,7 +161,7 @@ function App() {
       player: "bob",
     });
 
-    
+
 
     let contract = await fetchContract(game.alicePubKey, game.bobPubKey);
 
@@ -174,7 +194,7 @@ function App() {
   async function startGame() {
 
 
-    if(started) {
+    if (started) {
       console.log('already started')
       return;
     }
