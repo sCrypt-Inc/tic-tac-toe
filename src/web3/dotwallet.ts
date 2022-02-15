@@ -7,7 +7,7 @@ import Request from '../Request';
 export class DotWallet extends wallet {
   API_PREFIX: string;
   API_DOTWALLET: string;
-  CLIENT_ID = 'b02425bfc60c86e8dc1fc0243a005882';
+  CLIENT_ID = 'aa7f349975c72e5ba3178e636728f6b2';
   loginUrl: string;
   sender: any;
 
