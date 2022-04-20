@@ -95,19 +95,23 @@ class Game extends React.Component {
     })
   }
 
-  calculateOldState(squares) {
-
-    this.props.contractInstance.is_alice_turn = this.state.is_alice_turn;
-    this.props.contractInstance.board = new Bytes(squares.map(square => {
-
-      if (square && square.label === 'X') {
-        return '01'
-      } else if (square && square.label === 'O') {
-        return '02'
-      } else {
-        return '00';
-      }
-    }).join(''));
+  calculateOldState(n, squares) {
+    // n = 0 is first call
+    console.log('board', n)
+    if(n > 0) {
+      this.props.contractInstance.is_alice_turn = this.state.is_alice_turn;
+      this.props.contractInstance.board = new Bytes(squares.map(square => {
+  
+        if (square && square.label === 'X') {
+          return '01'
+        } else if (square && square.label === 'O') {
+          return '02'
+        } else {
+          return '00';
+        }
+      }).join(''));
+    }
+    
   }
 
 
@@ -218,6 +222,7 @@ class Game extends React.Component {
     const result = this.props.contractInstance.move(i, new Sig(toHex(sig)), amount, preimage).verify({ inputSatoshis: this.props.game.lastUtxo.satoshis, tx: toBsvTx(tx) })
 
     if (!result.success) {
+      console.error(result.error)
       throw new Error(result.error)
     }
 
@@ -231,7 +236,7 @@ class Game extends React.Component {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
-    this.calculateOldState(squares);
+    this.calculateOldState(this.state.currentStepNumber, squares);
     if (!this.updateState(i, squares)) {
       console.error('handleClick checkIfValid false...')
       return;

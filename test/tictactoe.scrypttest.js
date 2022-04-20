@@ -52,30 +52,35 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
   function reset() {
     game.board = new Bytes('000000000000000000');
     game.is_alice_turn = true;
-    game.commitState();
   }
 
   function moveScript(is_alice_turn, board) {
-    game.board = new Bytes(board);
-    game.is_alice_turn = is_alice_turn
-    return game.lockingScript;
+    return {
+      outputScript: game.getNewStateScript({
+        is_alice_turn: is_alice_turn,
+        board: new Bytes(board)
+      }),
+      is_alice_turn: is_alice_turn,
+      board: new Bytes(board)
+    }
+    
   }
 
-  function testMove(isAliceTurn, n, outputScript, expected) {
+  function testMove(isAliceTurn, n, newStates, expected) {
     const privateKey = isAliceTurn ? privateKeyAlice : privateKeyBob;
-
 
 
     const tx = newTx();
 
     tx.addOutput(new bsv.Transaction.Output({
-      script: outputScript,
+      script: newStates.outputScript,
       satoshis: 10000
     }))
 
-    preimage = getPreimage(tx, game.prevLockingScript, inputSatoshis);
 
-    sig = signTx(tx, privateKey, game.prevLockingScript, inputSatoshis)
+    preimage = getPreimage(tx, game.lockingScript, inputSatoshis);
+
+    sig = signTx(tx, privateKey, game.lockingScript, inputSatoshis)
 
     const context = { tx, inputIndex, inputSatoshis }
 
@@ -85,9 +90,33 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
       expect(result.success, result.error).to.be.false;
     } else {
       expect(result.success, result.error).to.be.true;
-      game.commitState();
+      game.is_alice_turn = newStates.is_alice_turn;
+      game.board = newStates.board;
     }
 
+  }
+
+  function testMoveWin(isAliceTurn, n, outputScript) {
+    const privateKey = isAliceTurn ? privateKeyAlice : privateKeyBob;
+
+
+    const tx = newTx();
+
+    tx.addOutput(new bsv.Transaction.Output({
+      script: outputScript,
+      satoshis: 10000
+    }))
+
+
+    preimage = getPreimage(tx, game.lockingScript, inputSatoshis);
+
+    sig = signTx(tx, privateKey, game.lockingScript, inputSatoshis)
+
+    const context = { tx, inputIndex, inputSatoshis }
+
+    result = game.move(n, new Sig(toHex(sig)), 10000, preimage).verify(context)
+
+    expect(result.success, result.error).to.be.true;
   }
 
   function testMoveNobodyWin(isAliceTurn, n, outputScript0, outputScript1) {
@@ -106,9 +135,9 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
     }))
 
 
-    preimage = getPreimage(tx, game.prevLockingScript, inputSatoshis);
+    preimage = getPreimage(tx, game.lockingScript, inputSatoshis);
 
-    sig = signTx(tx, privateKey, game.prevLockingScript, inputSatoshis)
+    sig = signTx(tx, privateKey, game.lockingScript, inputSatoshis)
 
     const context = { tx, inputIndex, inputSatoshis }
 
@@ -134,7 +163,7 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
     // game.setDataPart(state)
 
     // Alice places an X at 2-th cell and wins
-    testMove(true, 2, bsv.Script.buildPublicKeyHashOut(privateKeyAlice.toAddress()));
+    testMoveWin(true, 2, bsv.Script.buildPublicKeyHashOut(privateKeyAlice.toAddress()));
   });
 
 
