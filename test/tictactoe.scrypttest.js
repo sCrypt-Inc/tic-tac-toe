@@ -42,7 +42,7 @@ const publicKeyBob = bsv.PublicKey.fromPrivateKey(privateKeyBob)
 
 const Tictactoe = buildContractClass(runCompile('tictactoe.scrypt'));
 
-let game = new Tictactoe(new PubKey(toHex(publicKeyAlice)), new PubKey(toHex(publicKeyBob)), true, new Bytes("000000000000000000"));
+let game = new Tictactoe(new PubKey(toHex(publicKeyAlice)), new PubKey(toHex(publicKeyBob)), true, [0,0,0,0,0,0,0,0,0]);
 
 
 
@@ -50,7 +50,7 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
   let result, preimage, sig
 
   function reset() {
-    game.board = new Bytes('000000000000000000');
+    game.board = [0,0,0,0,0,0,0,0,0];
     game.is_alice_turn = true;
   }
 
@@ -58,10 +58,10 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
     return {
       outputScript: game.getNewStateScript({
         is_alice_turn: is_alice_turn,
-        board: new Bytes(board)
+        board: board
       }),
       is_alice_turn: is_alice_turn,
-      board: new Bytes(board)
+      board: board
     }
     
   }
@@ -149,18 +149,17 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
 
 
     // Alice places an X at 0-th cell
-    testMove(true, 0, moveScript(false, "010000000000000000"))
+    testMove(true, 0, moveScript(false, [1,0,0,0,0,0,0,0,0]))
 
     // Bob places an O at 4-th cell
-    testMove(false, 4, moveScript(true, '010000000200000000'))
+    testMove(false, 4, moveScript(true, [1,0,0,0,2,0,0,0,0]))
 
 
-    // // Alice places an X at 1-th cell
-    testMove(true, 1, moveScript(false, '010100000200000000'))
+    // Alice places an X at 1-th cell
+    testMove(true, 1, moveScript(false, [1,1,0,0,2,0,0,0,0]))
 
-    // // Bob places an O at 8-th cell
-    testMove(false, 8, moveScript(true, '010100000200000002'))
-    // game.setDataPart(state)
+    // Bob places an O at 8-th cell
+    testMove(false, 8, moveScript(true, [1,1,0,0,2,0,0,0,2]))
 
     // Alice places an X at 2-th cell and wins
     testMoveWin(true, 2, bsv.Script.buildPublicKeyHashOut(privateKeyAlice.toAddress()));
@@ -171,32 +170,31 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
 
     reset();
     // Alice places an X at 0-th cell
-    testMove(true, 0, moveScript(false, '010000000000000000'))
+    testMove(true, 0, moveScript(false, [1,0,0,0,0,0,0,0,0]))
 
-    // // Bob places an O at 2-th cell
-    testMove(false, 2, moveScript(true, '010002000000000000'))
+    // Bob places an O at 2-th cell
+    testMove(false, 2, moveScript(true, [1,0,2,0,0,0,0,0,0]))
 
-    // // Alice places an X at 1-th cell
-    testMove(true, 1, moveScript(false, '010102000000000000'))
-    // game.setDataPart(state)
+    // Alice places an X at 1-th cell
+    testMove(true, 1, moveScript(false, [1,1,2,0,0,0,0,0,0]))
 
     // // Bob places an O at 3-th cell
-    testMove(false, 3, moveScript(true, '010102020000000000'))
+    testMove(false, 3, moveScript(true, [1,1,2,2,0,0,0,0,0]))
 
 
     // // Alice places an X at 5-th cell
-    testMove(true, 5, moveScript(false, '010102020001000000'))
+    testMove(true, 5, moveScript(false, [1,1,2,2,0,1,0,0,0]))
 
     // // Bob places an O at 4-th cell
-    testMove(false, 4, moveScript(true, '010102020201000000'))
+    testMove(false, 4, moveScript(true, [1,1,2,2,2,1,0,0,0]))
 
 
     // // Alice places an X at 6-th cell
-    testMove(true, 6, moveScript(false, '010102020201010000'))
+    testMove(true, 6, moveScript(false, [1,1,2,2,2,1,1,0,0]))
 
 
     // // Bob places an O at 8-th cell
-    testMove(false, 8, moveScript(true, '010102020201010002'))
+    testMove(false, 8, moveScript(true, [1,1,2,2,2,1,1,0,2]))
 
 
     // // Alice places an X at 7-th cell and nobody wins
@@ -207,19 +205,19 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
   it('should fail if it\'s not alice turn', () => {
     // Alice places an X at 0-th cell
     reset();
-    testMove(true, 0, moveScript(false, '010000000000000000'))
+    testMove(true, 0, moveScript(false, [1,0,0,0,0,0,0,0,0]))
 
     // Alice places an X at 1-th cell
-    testMove(true, 1, moveScript(true, '010100000000000000'), false)
+    testMove(true, 1, moveScript(true, [1,1,0,0,0,0,0,0,0]), false)
   })
 
   it('should fail if it exceeds the board', () => {
     reset();
     // Alice places an X at 0-th cell
-    testMove(true, 0, moveScript(false, '010000000000000000'))
+    testMove(true, 0, moveScript(false, [1,0,0,0,0,0,0,0,0]))
 
     // Bob places an O exceeds the board
-    testMove(true, 11, moveScript(true, '010000000000000000'), false)
+    testMove(true, 11, moveScript(true, [1,0,0,0,0,0,0,0,0]), false)
   })
 
 
