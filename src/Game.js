@@ -1,6 +1,6 @@
 import React from 'react';
 import Board from './Board';
-import { bsv, Bytes, Sig, toHex } from 'scryptlib';
+import { bsv, Sig, toHex } from 'scryptlib';
 import { web3, Input, SignType } from './web3';
 
 import server from './Server';
@@ -70,7 +70,6 @@ class Game extends React.Component {
 
 
   componentWillReceiveProps(nextProps) {
-    console.log('componentWillReceiveProps', nextProps)
     if (nextProps.game && nextProps.game.gameState) {
       this.setState(nextProps.game.gameState);
     } else {
@@ -82,36 +81,34 @@ class Game extends React.Component {
   getNewStateScript(squares) {
     return this.props.contractInstance.getNewStateScript({
       is_alice_turn: !this.state.is_alice_turn,
-      board: new Bytes(squares.map(square => {
+      board: squares.map(square => {
 
         if (square && square.label === 'X') {
-          return '01'
+          return 1;
         } else if (square && square.label === 'O') {
-          return '02'
+          return 2;
         } else {
-          return '00';
+          return 0;
         }
-      }).join(''))
+      })
     })
   }
 
   calculateOldState(n, squares) {
     // n = 0 is first call
-    console.log('board', n)
     if(n > 0) {
       this.props.contractInstance.is_alice_turn = this.state.is_alice_turn;
-      this.props.contractInstance.board = new Bytes(squares.map(square => {
+      this.props.contractInstance.board = squares.map(square => {
   
         if (square && square.label === 'X') {
-          return '01'
+          return 1;
         } else if (square && square.label === 'O') {
-          return '02'
+          return 2
         } else {
-          return '00';
+          return 0;
         }
-      }).join(''));
+      })
     }
-    
   }
 
 

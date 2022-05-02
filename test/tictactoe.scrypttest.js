@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { buildContractClass, compileContract, Bytes, signTx, bsv, Sig, SigHashPreimage, PubKey, toHex, getPreimage, Ripemd160 } = require('scryptlib');
+const { buildContractClass, compileContract, signTx, bsv, Sig, PubKey, toHex, getPreimage } = require('scryptlib');
 const path = require('path');
 const { existsSync, mkdirSync } = require('fs');
 const inputIndex = 0
