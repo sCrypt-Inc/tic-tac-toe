@@ -16,8 +16,6 @@ class Server extends EventEmitter {
         window.addEventListener('storage', (e) => {
             // When local storage changes, dump the list to
             // the console.
-            console.log('on storage change ' + this.player, e)
-
 
             if (e.key === "game") {
                 try {
@@ -43,20 +41,17 @@ class Server extends EventEmitter {
 
 
     deleteGame = () => {
-        console.log('deleteGame');
         window.localStorage.removeItem('game');
     }
 
 
     createGame = (game) => {
         game.event = 'createGame';
-        console.log('createGame', game);
         return window.localStorage.setItem('game', JSON.stringify(game));
     }
 
     saveGame = (game, event) => {
         game.event = event;
-        console.log('saveGame', game);
         window.localStorage.setItem('game', JSON.stringify(game));
     }
 
@@ -108,24 +103,20 @@ class Server extends EventEmitter {
     }
 
     addDeployedListener(cb) {
-        console.log('addDeployedListener');
         this.on('deployed', cb);
     }
 
 
     removeDeployedListener(cb) {
-        console.log('removeDeployedListener');
         this.off('deployed', cb)
     }
 
 
     addNextListener(cb) {
-        console.log('addNextListener');
         this.on('next', cb);
     }
 
     removeNextListener(cb) {
-        console.log('removeNextListener');
         this.off('next', cb)
     }
 }

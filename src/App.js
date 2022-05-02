@@ -2,7 +2,7 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { Bytes, PubKey, toHex, bsv } from "scryptlib";
+import { PubKey, toHex, bsv } from "scryptlib";
 
 import { DotWallet, web3, UTXO } from "./web3";
 import Wallet from "./wallet";
@@ -68,8 +68,6 @@ function App() {
   };
 
   const onDeployed = async (game) => {
-    console.log("onDeployed...");
-
     if (game && game.alicePubKey && game.bobPubKey) {
       fetchContract(game.alicePubKey, game.bobPubKey);
     }
@@ -79,7 +77,6 @@ function App() {
 
   const onNext = async (game) => {
     //BOB SIGN
-    console.log("onNext", game);
     forceUpdate();
   };
 
@@ -93,19 +90,16 @@ function App() {
         new PubKey(toHex(alicePubKey)),
         new PubKey(toHex(bobPubKey)),
         true,
-        new Bytes('000000000000000000')
+        [0,0,0,0,0,0,0,0,0]
       );
 
-
       updateContractInstance(c);
-      console.log("fetchContract successfully");
       return c;
     }
     return contractInstance;
   }
 
   function setPlayersPublicKey() {
-    console.log('setPlayersPublicKey ...')
     let wallet = web3.wallet
 
     if (wallet instanceof Sensilet) {
@@ -140,7 +134,6 @@ function App() {
 
 
   async function joinGame(game) {
-    console.log("joinGame...", game);
 
     let balance = await web3.wallet.getbalance();
 
@@ -195,10 +188,8 @@ function App() {
 
 
     if (started) {
-      console.log('already started')
       return;
     }
-    console.log('startGame...')
     await setPlayersPublicKey();
 
     let game = server.getGame();

@@ -1,6 +1,4 @@
 
-import "util.scrypt";
-
 contract TicTacToe {
     PubKey alice;
     PubKey bob;
@@ -10,15 +8,15 @@ contract TicTacToe {
     bool is_alice_turn;
 
     //Represents the position of the chessboard. For example, a chess piece with alice in the first row 
-    //and first column is expressed as 010000000000000000
+    //and first column is expressed as [1,0,0,0,0,0,0,0,0]
     @state
-    bytes board;
+    int[9] board;
 
     static const int TURNLEN = 1;
     static const int BOARDLEN = 9;
-    static const bytes EMPTY = b'00';
-    static const bytes ALICE = b'01';
-    static const bytes BOB = b'02';
+    static const int EMPTY = 0;
+    static const int ALICE = 1;
+    static const int BOB = 2;
 
     public function move(int n, Sig sig, int amount, SigHashPreimage txPreimage) {
 
@@ -26,24 +24,24 @@ contract TicTacToe {
         require(n >= 0 && n < BOARDLEN);
 
         // not filled
-        require(Util.getElemAt(this.board, n) == EMPTY);
+        require(this.board[n] == EMPTY);
 
-        bytes play = this.is_alice_turn ? ALICE : BOB;
+        int play = this.is_alice_turn ? ALICE : BOB;
         PubKey player = this.is_alice_turn ? this.alice : this.bob;
 
         // ensure it's player's turn
         require(checkSig(sig, player));
         // make the move
-        this.board = Util.setElemAt(this.board, n, play);
+        this.board[n] = play;
         this.is_alice_turn = !this.is_alice_turn;
 
         bytes outputs = b'';
-        if (this.won(this.board, play)) {
+        if (this.won(play)) {
             bytes outputScript = Utils.buildPublicKeyHashScript(hash160(player));
             bytes output = Utils.buildOutput(outputScript, amount);
             outputs = output;
         }
-        else if (this.full(this.board)) {
+        else if (this.full()) {
             bytes aliceScript = Utils.buildPublicKeyHashScript(hash160(this.alice));
             bytes aliceOutput = Utils.buildOutput(aliceScript, amount);
 
@@ -61,7 +59,7 @@ contract TicTacToe {
         require(hash256(outputs) == SigHash.hashOutputs(txPreimage));
     }
 
-    function won(bytes board, bytes play) : bool {
+    function won(int play) : bool {
 
         int[8][3] lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
@@ -69,7 +67,7 @@ contract TicTacToe {
         loop (8) : i {
             bool line = true;
             loop (3) : j {
-                line = line && Util.getElemAt(board, lines[i][j]) == play;
+                line = line && this.board[lines[i][j]] == play;
             }
 
             anyLine = anyLine || line;
@@ -78,11 +76,11 @@ contract TicTacToe {
         return anyLine;
     }
 
-    function full(bytes board) : bool {
+    function full() : bool {
         bool full = true;
 
         loop (BOARDLEN) : i {
-            full = full && Util.getElemAt(board, i) != TicTacToe.EMPTY;
+            full = full && this.board[i] != TicTacToe.EMPTY;
         }
 
         return full;
