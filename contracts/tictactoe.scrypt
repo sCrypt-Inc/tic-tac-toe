@@ -3,17 +3,16 @@ contract TicTacToe {
     PubKey alice;
     PubKey bob;
 
-    //Represents whether it is alice's turn to play chess
+    // if it is alice's turn to play
     @state
-    bool is_alice_turn;
+    bool isAliceTurn;
 
-    //Represents the position of the chessboard. For example, a chess piece with alice in the first row 
-    //and first column is expressed as [1,0,0,0,0,0,0,0,0]
+    // state of the board. For example, a chess with Alice in the first row 
+    // and first column is expressed as [1,0,0,0,0,0,0,0,0]
     @state
-    int[9] board;
+    int[N] board;
 
-    static const int TURNLEN = 1;
-    static const int BOARDLEN = 9;
+    static const int N = 9;
     static const int EMPTY = 0;
     static const int ALICE = 1;
     static const int BOB = 2;
@@ -21,19 +20,19 @@ contract TicTacToe {
     public function move(int n, Sig sig, int amount, SigHashPreimage txPreimage) {
 
         require(Tx.checkPreimage(txPreimage));
-        require(n >= 0 && n < BOARDLEN);
+        require(n >= 0 && n < N);
 
         // not filled
         require(this.board[n] == EMPTY);
 
-        int play = this.is_alice_turn ? ALICE : BOB;
-        PubKey player = this.is_alice_turn ? this.alice : this.bob;
+        int play = this.isAliceTurn ? ALICE : BOB;
+        PubKey player = this.isAliceTurn ? this.alice : this.bob;
 
         // ensure it's player's turn
         require(checkSig(sig, player));
         // make the move
         this.board[n] = play;
-        this.is_alice_turn = !this.is_alice_turn;
+        this.isAliceTurn = !this.isAliceTurn;
 
         bytes outputs = b'';
         if (this.won(play)) {
@@ -60,7 +59,7 @@ contract TicTacToe {
     }
 
     function won(int play) : bool {
-
+        // three in a row, a column, or a diagonal
         int[8][3] lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
         bool anyLine = false;
@@ -79,7 +78,7 @@ contract TicTacToe {
     function full() : bool {
         bool full = true;
 
-        loop (BOARDLEN) : i {
+        loop (N) : i {
             full = full && this.board[i] != TicTacToe.EMPTY;
         }
 
