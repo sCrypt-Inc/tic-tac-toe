@@ -1,12 +1,10 @@
 
-import { toHex, bsv } from 'scryptlib';
-
 export interface UTXO {
-  txHash: number,
+  txId: number,
   outputIndex: string;
   satoshis: number;
   script: string;
-  addr?: string;
+  address?: string;
   pubkey?: string
 }
 
@@ -69,12 +67,15 @@ export abstract class wallet {
   abstract getbalance(): Promise<number>;
 
   //sign raw transaction, returns unlockscript of the p2pkh input if success
-  abstract signRawTransaction(rawtx: string, inputIndex: number, sigHashType: SignType, addr: string
+  abstract signRawTransaction(rawtx: string, script: string, satoshis: number, inputIndex: number, sigHashType: SignType
   ): Promise<string>;
 
   //get signature for special input
-  abstract getSignature(rawtx: string, inputIndex: number, inputAmount: number, inputScript: string, sigHashType: SignType, addr: string
-  ): Promise<string>;
+  abstract getSignature(rawtx: string, script: string, satoshis: number, inputIndex: number, sigHashType: SignType, address: string
+  ): Promise<{
+    signature: string,
+    publickey: string
+  }>;
 
   //send raw transaction, returns transaction hash if success
   abstract sendRawTransaction(rawTx: string): Promise<string>;

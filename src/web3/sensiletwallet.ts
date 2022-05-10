@@ -3,7 +3,7 @@ import axios from 'axios';
 import { bsv } from 'scryptlib/dist';
 
 
-export class Sensilet extends wallet {
+export class SensiletWallet extends wallet {
   static DEBUG_TAG = 'Sensilet';
   API_PREFIX: string;
   sensilet: any;
@@ -12,10 +12,10 @@ export class Sensilet extends wallet {
     super(network);
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network == NetWork.Testnet ? 'test' : 'main'}`;
     if (typeof (window as any).sensilet !== 'undefined') {
-      console.log('Sensilet is installed!');
+      console.log(SensiletWallet.DEBUG_TAG, 'Sensilet is installed!');
       this.sensilet = (window as any).sensilet 
     } else {
-      console.warn("sensilet is not installed");
+      console.warn(SensiletWallet.DEBUG_TAG, "sensilet is not installed");
     }
   }
 
@@ -26,7 +26,7 @@ export class Sensilet extends wallet {
         alert("sensilet is not installed");
          window.open("https://sensilet.com/", '_blank');
       } else  {
-        console.log('Sensilet is installed!');
+        console.log(SensiletWallet.DEBUG_TAG, 'Sensilet is installed!');
         this.sensilet = (window as any).sensilet 
         return this.sensilet.requestAccount()
       }
@@ -37,10 +37,10 @@ export class Sensilet extends wallet {
 
   async isConnect(): Promise<boolean> {
     try {
-      console.log('isConnect')
+      console.log(SensiletWallet.DEBUG_TAG, 'isConnect')
       if (typeof this.sensilet !== 'undefined') {
         let isConnected = await this.sensilet.isConnect();
-        console.log('connect state', isConnected);
+        console.log(SensiletWallet.DEBUG_TAG, 'connect state', isConnected);
         return isConnected;
       } 
 
@@ -54,7 +54,7 @@ export class Sensilet extends wallet {
   async getbalance(): Promise<number> {
     try {
       let res = await this.sensilet.getBsvBalance();
-      console.log(Sensilet.DEBUG_TAG, 'getbalance', res.balance)
+      console.log(SensiletWallet.DEBUG_TAG, 'getbalance', res.balance)
       return Promise.resolve(res.balance.total);
     } catch (error) {
       console.error('getbalance error', error);
@@ -64,51 +64,66 @@ export class Sensilet extends wallet {
   }
 
   async signRawTransaction(rawtx: string,
-    inputIndex: number,
-    sigHashType: SignType,
-    addr: string
+    script: string, 
+    satoshis: number, 
+    inputIndex: number, 
+    sigHashType: SignType
   ): Promise<string> {
-    console.log('signRawTransaction', rawtx)
+
     const tx = new bsv.Transaction(rawtx);
     let res = await this.sensilet.signTx({
       list:[
         {
           txHex: rawtx,
-          address: addr,
-          inputIndex:inputIndex,
-          satoshis:tx.inputs[inputIndex].satoshis
-        }
-      ]
-    });
-    console.log(res)
-
-    return Promise.resolve(res.sigList[0].sig);
-  }
-
-
-
-  async getSignature(rawtx: string,
-    inputIndex: number,
-    inputAmount: number,
-    inputScript: string, 
-    sigHashType: SignType,
-    addr: string
-  ): Promise<string> {
-
-    let res = await this.sensilet.signTx({
-      list:[
-        {
-          txHex: rawtx,
-          address: addr,
-          inputIndex:inputIndex,
-          satoshis:inputAmount,
-          scriptHex: inputScript,
+          address: getAddressFromP2PKH(script),
+          scriptHex: script,
+          inputIndex: inputIndex,
+          satoshis: satoshis,
           sigtype: sigHashType
         }
       ]
     });
 
-    return res.sigList[0].sig;
+    const unlockScript = new bsv.Script()
+    .add(Buffer.from(res.sigList[0].sig,'hex'))
+    .add(Buffer.from(res.sigList[0].publicKey,'hex'));
+
+    tx.inputs[inputIndex].setScript(unlockScript);
+
+    return tx.toString();
+  }
+
+
+
+  async getSignature(rawtx: string,
+    script: string, 
+    satoshis: number,
+    inputIndex: number, 
+    sigHashType: SignType,
+    address: string
+  ): Promise<{
+    signature: string,
+    publickey: string
+  }> {
+
+    let res = await this.sensilet.signTx({
+      list:[
+        {
+          txHex: rawtx,
+          address: address,
+          inputIndex:inputIndex,
+          satoshis:satoshis,
+          scriptHex: script,
+          sigtype: sigHashType
+        }
+      ]
+    });
+
+    return {
+      signature: res.sigList[0].sig,
+      publickey:  res.sigList[0].publickey,
+    }
+
   }
 
   async sendRawTransaction(rawTx: string): Promise<string> {
@@ -132,13 +147,13 @@ export class Sensilet extends wallet {
   async listUnspent(minAmount: number, options?: { purpose?: string; }): Promise<UTXO[]> {
 
     let address = await this.sensilet.getAddress();
-    console.log(Sensilet.DEBUG_TAG, 'listUnspent', address)
+    console.log(SensiletWallet.DEBUG_TAG, 'listUnspent', address)
     return axios.get(`${this.API_PREFIX}/address/${address}/unspent`, {
       timeout: 10000
     }).then(res => {
       return res.data.filter((utxo: any) => utxo.value >= minAmount).map((utxo: any) => {
         return {
-          txHash: utxo.tx_hash,
+          txId: utxo.tx_hash,
           outputIndex: utxo.tx_pos,
           satoshis: utxo.value,
           script: bsv.Script.buildPublicKeyHashOut(address).toHex(),
@@ -162,8 +177,16 @@ export class Sensilet extends wallet {
       await this.sensilet.exitAccount();
       return true
    } catch (e) {
-     console.log(e);
+     console.error(SensiletWallet.DEBUG_TAG, "exitAccount error", e);
    }
    return false;
   }
+}
+
+function getAddressFromP2PKH(script: string){
+  const asm = bsv.Script.fromHex(script).toASM();
+  //OP_DUP OP_HASH160 ${address} OP_EQUALVERIFY OP_CHECKSIG
+  const pubKeyHash = asm.split(' ')[2]; //get address from script
+  const address = new bsv.Address.fromHex(`00${pubKeyHash}`).toString();
+  return address
 }

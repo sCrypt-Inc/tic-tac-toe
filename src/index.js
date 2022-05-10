@@ -2,7 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+
+import {initPlayer} from './storage';
 import reportWebVitals from './reportWebVitals';
+
+
+initPlayer();
 
 ReactDOM.render(
   <React.StrictMode>
