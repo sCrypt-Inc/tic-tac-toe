@@ -16,10 +16,10 @@ function TitleBar(props) {
         }
         let amount = parseInt(amountRef.current.value);
 
-        // if (amount < 20000) {
-        //     alert("invalid amount, at least 20000 satoshis")
-        //     return;
-        // }
+        if (amount < 50000) {
+            alert("invalid amount, at least 50000 satoshis")
+            return;
+        }
 
         if (!isNaN(amount)) {
 
@@ -52,7 +52,7 @@ function TitleBar(props) {
         return (
             <div>
                 <label>Bet amount:
-                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={1} placeholder="in satoshis" />
+                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={50000} placeholder="in satoshis" />
                 </label>
                 <button className="start" onClick={onStart}>Start</button>
             </div>
