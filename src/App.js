@@ -25,8 +25,6 @@ async function fetchContract(alicePubKey, bobPubKey) {
 
 function App() {
 
-  const forceUpdate = React.useReducer((bool) => !bool)[1];
-
   const ref = React.createRef();
 
   const [states, updateStates] = useState({
