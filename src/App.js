@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import { PubKey } from "scryptlib";
 import { web3, SensiletWallet } from "./web3";
-import Wallet from "./wallet";
+import Balance from "./balance";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
 import Auth from "./auth";
 
@@ -32,7 +32,7 @@ function App() {
     instance: null
   });
 
-
+  // init web3 wallet
   useEffect(async () => {
 
     const timer = setTimeout(async ()=> {
@@ -120,7 +120,7 @@ function App() {
         />
         <Game ref={ref} contractInstance={states.instance} />
 
-        {states.isConnected ? <Wallet></Wallet> : <Auth></Auth>}
+        {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { web3 } from "./web3";
-const Wallet = (props) => {
+const Balance = (props) => {
   const [balance, setBalance] = useState(0);
 
   useEffect(async () => {
@@ -22,4 +22,4 @@ const Wallet = (props) => {
     );
 };
 
-export default Wallet;
+export default Balance;
