@@ -58,7 +58,7 @@ function App() {
 
   }, []);
 
-  const startBet = async (amount) => {
+  const startGame = async (amount) => {
 
     if (web3.wallet && states.instance) {
 
@@ -88,7 +88,7 @@ function App() {
     }
   };
 
-  const cancelBet = async () => {
+  const cancelGame = async () => {
     GameData.clear();
     ContractUtxos.clear();
     CurrentPlayer.set(Player.Alice);
@@ -114,8 +114,8 @@ function App() {
       <header className="App-header">
         <h2>Play Tic-Tac-Toe on Bitcoin</h2>
         <TitleBar
-          startBet={startBet}
-          cancelBet={cancelBet}
+          onStart={startGame}
+          onCancel={cancelGame}
           started={states.started}
         />
         <Game ref={ref} contractInstance={states.instance} />

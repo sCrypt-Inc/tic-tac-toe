@@ -30,14 +30,14 @@ function TitleBar(props) {
                 return;
             }
 
-            props.startBet(amount);
+            props.onStart(amount);
         } else {
             console.error(`${amountRef.current.value} is not number`)
         }
     }
 
     const onCancel = (e) => {
-        props.cancelBet();
+        props.onCancel();
     }
 
 
