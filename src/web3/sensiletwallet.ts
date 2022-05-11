@@ -1,4 +1,4 @@
-import { NetWork, UTXO, wallet, Tx, SignType } from './wallet';
+import { NetWork, UTXO, wallet, SignType } from './wallet';
 import axios from 'axios';
 import { bsv } from 'scryptlib/dist';
 
@@ -35,7 +35,7 @@ export class SensiletWallet extends wallet {
     return this.sensilet.requestAccount()
   }
 
-  async isConnect(): Promise<boolean> {
+  async isConnected(): Promise<boolean> {
     try {
       console.log(SensiletWallet.DEBUG_TAG, 'isConnect')
       if (typeof this.sensilet !== 'undefined') {
@@ -183,7 +183,7 @@ export class SensiletWallet extends wallet {
   }
 }
 
-function getAddressFromP2PKH(script: string){
+function getAddressFromP2PKH(script: string) : string {
   const asm = bsv.Script.fromHex(script).toASM();
   //OP_DUP OP_HASH160 ${address} OP_EQUALVERIFY OP_CHECKSIG
   const pubKeyHash = asm.split(' ')[2]; //get address from script

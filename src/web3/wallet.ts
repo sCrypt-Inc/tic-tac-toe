@@ -8,23 +8,6 @@ export interface UTXO {
   pubkey?: string
 }
 
-export interface Output {
-  satoshis: number,
-  script: string;
-}
-
-
-export interface Input {
-  utxo: UTXO,
-  sequence: number,
-  script: string;
-}
-
-export interface Tx {
-  nLockTime?: number,
-  inputs: Input[],
-  outputs: Output[],
-}
 
 export interface Account {
   name: string,
@@ -59,6 +42,9 @@ export abstract class wallet {
   constructor(network: NetWork) {
     this.network = network;
   }
+
+  // Check if the wallet is ready. If not ready, use requestAccount to setup.
+  abstract isConnected(): Promise<boolean>;
 
   //Dapp use this api to connect to the wallet.
   abstract requestAccount(name: string, permissions: string[]): Promise<any>;
