@@ -6,6 +6,7 @@ export const Player = {
   Bob: 'bob'
 };
 
+// store alice and bob's Privkey
 export const PlayerPrivkey = {
   get: (player) => {
     return localStorage.getItem(player);
@@ -15,7 +16,7 @@ export const PlayerPrivkey = {
   },
 };
 
-
+// store alice and bob's PublicKey, readonly
 export const PlayerPublicKey = {
   get: (player) => {
     const key = PlayerPrivkey.get(player);
@@ -25,6 +26,7 @@ export const PlayerPublicKey = {
   }
 };
 
+// store alice and bob's PublicKey Address, readonly
 export const PlayerAddress = {
   get: (player) => {
     const key = PlayerPrivkey.get(player);
@@ -33,6 +35,7 @@ export const PlayerAddress = {
   }
 };
 
+// store current player
 export const CurrentPlayer = {
   get: () => {
     return localStorage[`player`] || Player.Alice;
@@ -42,7 +45,7 @@ export const CurrentPlayer = {
   },
 };
 
-
+// Randomly generated alice and bob privateKey
 export const initPlayer = () => {
 
   const alice = PlayerPrivkey.get(Player.Alice);
@@ -60,7 +63,7 @@ export const initPlayer = () => {
   }
 }
 
-
+// store game data
 export const GameData = {
   get: () => {
     const gameStr = localStorage[`game`];
@@ -79,7 +82,7 @@ export const GameData = {
 };
 
 
-
+// store all utxos related to the contract
 export const ContractUtxos = {
   add: (rawTx, outputIndex = 0) => {
     const tx = new bsv.Transaction(rawTx);
