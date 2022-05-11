@@ -2,12 +2,11 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { PubKey, toHex, bsv } from "scryptlib";
-import { web3, UTXO } from "./web3";
+import { PubKey } from "scryptlib";
+import { web3, SensiletWallet } from "./web3";
 import Wallet from "./wallet";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
 import Auth from "./auth";
-import { SensiletWallet } from "./web3/sensiletwallet";
 
 
 async function fetchContract(alicePubKey, bobPubKey) {
@@ -37,12 +36,9 @@ function App() {
   useEffect(async () => {
 
     const timer = setTimeout(async ()=> {
-      const sensilet = new SensiletWallet();
-      const isConnected = await sensilet.isConnect();
-      if (isConnected) {
-        web3.setWallet(sensilet);
-        console.log("sensilet login ...");
-      }
+      web3.setWallet(new SensiletWallet())
+      const isConnected = await web3.wallet.isConnected();
+      console.log("sensilet isConnected: ", isConnected);
   
       const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
         PlayerPublicKey.get(Player.Bob))

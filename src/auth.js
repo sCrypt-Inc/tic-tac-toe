@@ -1,11 +1,10 @@
-import { SensiletWallet } from "./web3/sensiletwallet";
+import { web3 } from "./web3";
 
 const Auth = (props) => {
 
   const sensiletLogin = async (e) => {
     try {
-      const sensilet = new SensiletWallet();
-      const res = await sensilet.requestAccount("tic-tac-toe");
+      const res = await web3.wallet.requestAccount("tic-tac-toe");
       if (res) {
         window.location.reload();
       }
