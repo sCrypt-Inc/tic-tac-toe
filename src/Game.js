@@ -158,9 +158,9 @@ class Game extends React.Component {
 
     const contractUtxo = ContractUtxos.getlast().utxo;
 
-    web3.call(contractUtxo, (tx) => {
+    let winner = calculateWinner(squares).winner;
 
-      let winner = calculateWinner(squares).winner;
+    web3.call(contractUtxo, (tx) => {
 
       if (winner) { // Current Player won
         let address = PlayerAddress.get(CurrentPlayer.get());
@@ -231,7 +231,10 @@ class Game extends React.Component {
       squares[i].tx = utxo.utxo.txId;
       squares[i].n = history.length;
 
-      CurrentPlayer.set(this.state.isAliceTurn ? Player.Alice : Player.Bob);
+      if(!winner) {
+        CurrentPlayer.set(this.state.isAliceTurn ? Player.Alice : Player.Bob);
+      }
+
 
       // update states
       const gameState = Object.assign({}, this.state, {
@@ -283,7 +286,7 @@ class Game extends React.Component {
 
     let bet;
     if (deploy) {
-      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${deploy.utxo.txId}`} target="_blank">Bet transaction</a> </div>
+      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${deploy.utxo.txId}`} target="_blank">Deploy transaction</a> </div>
     }
 
     if (winner) {
