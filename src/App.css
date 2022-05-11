@@ -87,7 +87,7 @@
   margin: 1em 1em;
 }
 
-.wallet {
+.wallet .auth {
   display: flex;
   flex-direction: row;
   margin-top: 20px;
@@ -96,11 +96,6 @@
 .sensilet {
 
 }
-
-.dotwallet {
-  margin-left: 20px;
-}
-
 
 .wallet label {
   font-size: 1rem;

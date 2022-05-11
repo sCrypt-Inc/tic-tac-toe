@@ -51,16 +51,16 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
 
   function reset() {
     game.board = [0,0,0,0,0,0,0,0,0];
-    game.is_alice_turn = true;
+    game.isAliceTurn = true;
   }
 
-  function moveScript(is_alice_turn, board) {
+  function moveScript(isAliceTurn, board) {
     return {
       outputScript: game.getNewStateScript({
-        is_alice_turn: is_alice_turn,
+        isAliceTurn: isAliceTurn,
         board: board
       }),
-      is_alice_turn: is_alice_turn,
+      isAliceTurn: isAliceTurn,
       board: board
     }
     
@@ -90,7 +90,7 @@ describe('Test sCrypt contract Tictactoe In Javascript', () => {
       expect(result.success, result.error).to.be.false;
     } else {
       expect(result.success, result.error).to.be.true;
-      game.is_alice_turn = newStates.is_alice_turn;
+      game.isAliceTurn = newStates.isAliceTurn;
       game.board = newStates.board;
     }
 

@@ -1,32 +1,13 @@
 
-import { toHex, bsv } from 'scryptlib';
-
 export interface UTXO {
-  txHash: number,
+  txId: number,
   outputIndex: string;
   satoshis: number;
   script: string;
-  addr?: string;
+  address?: string;
   pubkey?: string
 }
 
-export interface Output {
-  satoshis: number,
-  script: string;
-}
-
-
-export interface Input {
-  utxo: UTXO,
-  sequence: number,
-  script: string;
-}
-
-export interface Tx {
-  nLockTime?: number,
-  inputs: Input[],
-  outputs: Output[],
-}
 
 export interface Account {
   name: string,
@@ -62,6 +43,9 @@ export abstract class wallet {
     this.network = network;
   }
 
+  // Check if the wallet is ready. If not ready, use requestAccount to setup.
+  abstract isConnected(): Promise<boolean>;
+
   //Dapp use this api to connect to the wallet.
   abstract requestAccount(name: string, permissions: string[]): Promise<any>;
 
@@ -69,12 +53,15 @@ export abstract class wallet {
   abstract getbalance(): Promise<number>;
 
   //sign raw transaction, returns unlockscript of the p2pkh input if success
-  abstract signRawTransaction(rawtx: string, inputIndex: number, sigHashType: SignType, addr: string
+  abstract signRawTransaction(rawtx: string, script: string, satoshis: number, inputIndex: number, sigHashType: SignType
   ): Promise<string>;
 
   //get signature for special input
-  abstract getSignature(rawtx: string, inputIndex: number, inputAmount: number, inputScript: string, sigHashType: SignType, addr: string
-  ): Promise<string>;
+  abstract getSignature(rawtx: string, script: string, satoshis: number, inputIndex: number, sigHashType: SignType, address: string
+  ): Promise<{
+    signature: string,
+    publickey: string
+  }>;
 
   //send raw transaction, returns transaction hash if success
   abstract sendRawTransaction(rawTx: string): Promise<string>;
