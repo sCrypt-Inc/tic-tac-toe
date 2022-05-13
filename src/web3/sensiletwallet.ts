@@ -1,5 +1,5 @@
 import { NetWork, UTXO, wallet, SignType } from './wallet';
-import { bsv } from 'scryptlib/dist';
+import { bsv } from 'scryptlib';
 import Whatsonchain from './whatsonchain';
 
 
