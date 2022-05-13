@@ -22,7 +22,7 @@ contract TicTacToe {
         require(Tx.checkPreimage(txPreimage));
         require(n >= 0 && n < N);
 
-        // not filled
+        // square not filled
         require(this.board[n] == EMPTY);
 
         int play = this.isAliceTurn ? ALICE : BOB;
