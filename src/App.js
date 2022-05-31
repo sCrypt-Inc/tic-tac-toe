@@ -3,6 +3,22 @@ import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
+import { web3 } from "./web3";
+import { PubKey } from "scryptlib/dist";
+
+
+async function fetchContract(alicePubKey, bobPubKey) {
+  let { contractClass: TictactoeContractClass } = await web3.loadContract(
+    "/tic-tac-toe/tictactoe_release_desc.json"
+  );
+
+  return new TictactoeContractClass(
+    new PubKey(alicePubKey),
+    new PubKey(bobPubKey),
+    true,
+    [0,0,0,0,0,0,0,0,0]
+  );
+}
 
 
 function App() {
@@ -18,11 +34,23 @@ function App() {
   // init web3 wallet
   useEffect(async () => {
 
-    updateStates({
-      started: Object.keys(GameData.get()).length > 0,
-      isConnected: false,
-      instance: null
-    })
+    const timer = setTimeout(async ()=> {
+
+      const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
+        PlayerPublicKey.get(Player.Bob))
+
+      updateStates({
+        started: Object.keys(GameData.get()).length > 0,
+        isConnected: false,
+        instance: instance
+      })
+
+    }, 100)
+
+
+    return () => {
+      clearTimeout(timer)
+    }
 
   }, []);
 
@@ -74,7 +102,7 @@ function App() {
           onCancel={cancelGame}
           started={states.started}
         />
-        <Game ref={ref}/>
+        <Game ref={ref} contractInstance={states.instance}/>
 
       </header>
     </div>
