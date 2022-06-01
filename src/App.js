@@ -62,23 +62,36 @@ function App() {
 
   const startGame = async (amount) => {
 
-    let gameStates = {
-      amount: amount,
-      name: "tic-tac-toe",
-      date: new Date(),
-      history: [
-        {
-          squares: Array(9).fill(null),
-        },
-      ],
-      currentStepNumber: 0,
-      isAliceTurn: true,
-    };
-    GameData.set(gameStates);
-    CurrentPlayer.set(Player.Alice);
-    updateStates(Object.assign({}, states, {
-      started: true
-    }))
+    if(web3.wallet && states.instance) {
+
+      web3.deploy(states.instance, amount).then(rawTx => {
+
+
+        let gameStates = {
+          amount: amount,
+          name: "tic-tac-toe",
+          date: new Date(),
+          history: [
+            {
+              squares: Array(9).fill(null),
+            },
+          ],
+          currentStepNumber: 0,
+          isAliceTurn: true,
+        };
+
+        ContractUtxos.add(rawTx);
+        GameData.set(gameStates);
+        CurrentPlayer.set(Player.Alice);
+
+        updateStates(Object.assign({}, states, {
+          started: true
+        }))
+
+      })
+    }
+
+    
     
   };
 
@@ -87,7 +100,11 @@ function App() {
     ContractUtxos.clear();
     CurrentPlayer.set(Player.Alice);
 
-
+    if(states.instance) {
+      // reset states
+      states.instance.isAliceTurn = true;
+      states.instance.board = [0,0,0,0,0,0,0,0,0];
+    }
 
     ref.current.clean();
 
