@@ -3,8 +3,10 @@ import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
-import { web3 } from "./web3";
+import { SensiletWallet, web3 } from "./web3";
 import { PubKey } from "scryptlib/dist";
+import Balance from "./balance";
+import Auth from "./auth";
 
 
 async function fetchContract(alicePubKey, bobPubKey) {
@@ -39,9 +41,13 @@ function App() {
       const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
         PlayerPublicKey.get(Player.Bob))
 
+      web3.setWallet(new SensiletWallet());
+
+      const isConnected = await web3.wallet.isConnected();
+
       updateStates({
         started: Object.keys(GameData.get()).length > 0,
-        isConnected: false,
+        isConnected: isConnected,
         instance: instance
       })
 
@@ -103,7 +109,7 @@ function App() {
           started={states.started}
         />
         <Game ref={ref} contractInstance={states.instance}/>
-
+        {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
     </div>
   );
