@@ -1,7 +1,32 @@
 import React from 'react';
+import { bsv,getPreimage,signTx } from 'scryptlib/dist';
 import Board from './Board';
 import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
+import { web3 } from './web3';
 
+
+
+// Convert react state to contract state
+const toContractState = (state) => {
+  const history = state.history.slice(0, state.currentStepNumber + 1);
+  const current = history[history.length - 1];
+  const squares = current.squares.slice();
+  // n = 0 is first call
+  if (state.currentStepNumber > 0) {
+    return {
+      isAliceTurn: state.isAliceTurn,
+      board: squares.map(square => {
+        if (square && square.label === 'X') {
+          return 1;
+        } else if (square && square.label === 'O') {
+          return 2
+        } else {
+          return 0;
+        }
+      })
+    }
+  }
+}
 
 const calculateWinner = (squares) => {
   const lines = [
@@ -61,11 +86,21 @@ class Game extends React.Component {
       this.state = initialState;
     }
 
+    this.attachState();
   
   }
 
   clean(){
     this.setState(initialState);
+  }
+
+  // update contract state
+  attachState() {
+    const states = toContractState(this.state);
+    if (states && this.props.contractInstance) {
+      this.props.contractInstance.isAliceTurn = states.isAliceTurn;
+      this.props.contractInstance.board = states.board;
+    }
   }
 
 
@@ -103,14 +138,9 @@ class Game extends React.Component {
       return;
     }
 
-    squares[i] = { label: this.state.isAliceTurn ? 'X' : 'O' };
-    squares[i].n = history.length;
-    let winner = calculateWinner(squares).winner;
-    
-    if(!winner) {
-      CurrentPlayer.set(!this.state.isAliceTurn ? Player.Alice : Player.Bob);
-    }
+    const backupState = Object.assign({}, this.state);
 
+    squares[i] = { label: this.state.isAliceTurn ? 'X' : 'O' };
     const gameState = {
       history: history.concat([
         {
@@ -123,14 +153,114 @@ class Game extends React.Component {
       currentStepNumber: history.length,
     }
 
+
     // update states
-    this.setState(gameState)
-    GameData.update(gameState)
+    this.setState(gameState);
+
+    const contractUtxo = ContractUtxos.getlast().utxo;
+
+    let winner = calculateWinner(squares).winner;
+
+    web3.call(contractUtxo, (tx) => {
+
+      if (winner) { // Current Player won
+        let address = PlayerAddress.get(CurrentPlayer.get());
+
+        tx.setOutput(0, (tx) => {
+          return new bsv.Transaction.Output({
+            script: bsv.Script.buildPublicKeyHashOut(address),
+            satoshis: contractUtxo.satoshis - tx.getEstimateFee(),
+          })
+        })
+
+      } else if (history.length >= 9) { //board is full
+
+        tx.setOutput(0, (tx) => {
+          return new bsv.Transaction.Output({
+            script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Alice)),
+            satoshis: (contractUtxo.satoshis - tx.getEstimateFee()) /2,
+          })
+        })
+        .setOutput(1, (tx) => {
+          return new bsv.Transaction.Output({
+            script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Bob)),
+            satoshis: (contractUtxo.satoshis - tx.getEstimateFee()) /2,
+          })
+        })
+
+      } else { //continue move
+
+        const newStates = toContractState(gameState);
+        const newLockingScript = this.props.contractInstance.getNewStateScript(newStates);
+        tx.setOutput(0, (tx) => {
+          const amount = contractUtxo.satoshis - tx.getEstimateFee();
+
+          return new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: amount,
+          })
+        })
+      }
+
+      tx.setInputScript(0, (tx, output) => {
+          const preimage = getPreimage(tx, output.script, output.satoshis)
+          const privateKey = new bsv.PrivateKey.fromWIF(PlayerPrivkey.get(CurrentPlayer.get()));
+          const sig = signTx(tx, privateKey, output.script, output.satoshis)
+
+          const amount = contractUtxo.satoshis - tx.getEstimateFee();
+
+          if(amount < 1) {
+            alert('Not enough funds.');
+            throw new Error('Not enough funds.')
+          }
+
+          // we can verify locally before we broadcast the tx, if fail, 
+          // it will print the launch.json in the brower webview developer tool, just copy/paste,
+          // and try launch the sCrypt debugger
+          // const result = this.props.contractInstance.move(i, sig, amount, preimage).verify({
+          //   inputSatoshis: output.satoshis, tx
+          // })
+
+
+          return this.props.contractInstance.move(i, sig, amount, preimage).toScript();
+        })
+        .seal()
+
+
+    }).then(rawTx => {
+
+      const utxo = ContractUtxos.add(rawTx);
+
+      squares[i].tx = utxo.utxo.txId;
+      squares[i].n = history.length;
+
+      if(!winner) {
+        CurrentPlayer.set(this.state.isAliceTurn ? Player.Alice : Player.Bob);
+      }
+
+
+      // update states
+      const gameState = Object.assign({}, this.state, {
+        history: history.concat([
+          {
+            squares,
+            currentLocation: getLocation(i),
+            stepNumber: history.length,
+          },
+        ])
+      })
+      this.setState(gameState)
+      GameData.update(gameState)
+      this.attachState();
+    })
+    .catch(e => {
+      //restore prev states
+      this.setState(backupState)
+
+      console.error('call contract fail', e)
+    })
+  
   }
-
-
-
-
 
 
 
