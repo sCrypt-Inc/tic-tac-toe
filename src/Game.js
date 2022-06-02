@@ -1,11 +1,32 @@
 import React from 'react';
+import { bsv,getPreimage,signTx } from 'scryptlib/dist';
 import Board from './Board';
-import { bsv, getPreimage, signTx } from 'scryptlib';
+import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
 import { web3 } from './web3';
 
 
-import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
 
+// Convert react state to contract state
+const toContractState = (state) => {
+  const history = state.history.slice(0, state.currentStepNumber + 1);
+  const current = history[history.length - 1];
+  const squares = current.squares.slice();
+  // n = 0 is first call
+  if (state.currentStepNumber > 0) {
+    return {
+      isAliceTurn: state.isAliceTurn,
+      board: squares.map(square => {
+        if (square && square.label === 'X') {
+          return 1;
+        } else if (square && square.label === 'O') {
+          return 2
+        } else {
+          return 0;
+        }
+      })
+    }
+  }
+}
 
 const calculateWinner = (squares) => {
   const lines = [
@@ -55,27 +76,6 @@ const initialState = {
   isAliceTurn: true,
 };
 
-const toContractState = (state) => {
-  const history = state.history.slice(0, state.currentStepNumber + 1);
-  const current = history[history.length - 1];
-  const squares = current.squares.slice();
-  // n = 0 is first call
-  if (state.currentStepNumber > 0) {
-    return {
-      isAliceTurn: state.isAliceTurn,
-      board: squares.map(square => {
-        if (square && square.label === 'X') {
-          return 1;
-        } else if (square && square.label === 'O') {
-          return 2
-        } else {
-          return 0;
-        }
-      })
-    }
-  }
-}
-
 class Game extends React.Component {
   constructor(props) {
     super(props);
@@ -87,10 +87,20 @@ class Game extends React.Component {
     }
 
     this.attachState();
+  
   }
 
   clean(){
     this.setState(initialState);
+  }
+
+  // update contract state
+  attachState() {
+    const states = toContractState(this.state);
+    if (states && this.props.contractInstance) {
+      this.props.contractInstance.isAliceTurn = states.isAliceTurn;
+      this.props.contractInstance.board = states.board;
+    }
   }
 
 
@@ -117,17 +127,7 @@ class Game extends React.Component {
     }
   }
 
-
-  attachState() {
-    const states = toContractState(this.state);
-    if (states && this.props.contractInstance) {
-      this.props.contractInstance.isAliceTurn = states.isAliceTurn;
-      this.props.contractInstance.board = states.board;
-    }
-  }
-
-  async handleClick(i) {
-
+  handleClick(i) {
     const history = this.state.history.slice(0, this.state.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
@@ -153,8 +153,9 @@ class Game extends React.Component {
       currentStepNumber: history.length,
     }
 
+
     // update states
-    this.setState(gameState)
+    this.setState(gameState);
 
     const contractUtxo = ContractUtxos.getlast().utxo;
 
@@ -193,6 +194,7 @@ class Game extends React.Component {
         const newLockingScript = this.props.contractInstance.getNewStateScript(newStates);
         tx.setOutput(0, (tx) => {
           const amount = contractUtxo.satoshis - tx.getEstimateFee();
+
           return new bsv.Transaction.Output({
             script: newLockingScript,
             satoshis: amount,
@@ -206,7 +208,7 @@ class Game extends React.Component {
           const sig = signTx(tx, privateKey, output.script, output.satoshis)
 
           const amount = contractUtxo.satoshis - tx.getEstimateFee();
-          
+
           if(amount < 1) {
             alert('Not enough funds.');
             throw new Error('Not enough funds.')
@@ -218,6 +220,7 @@ class Game extends React.Component {
           // const result = this.props.contractInstance.move(i, sig, amount, preimage).verify({
           //   inputSatoshis: output.satoshis, tx
           // })
+
 
           return this.props.contractInstance.move(i, sig, amount, preimage).toScript();
         })
@@ -256,10 +259,9 @@ class Game extends React.Component {
 
       console.error('call contract fail', e)
     })
-
-
-
+  
   }
+
 
 
   render() {
@@ -286,19 +288,19 @@ class Game extends React.Component {
 
     let bet;
     if (deploy) {
-      bet = <div className="bet"><a href={`https://whatsonchain.com/tx/${deploy.utxo.txId}`} target="_blank">Deploy transaction</a> </div>
+      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${deploy.utxo.txId}`} target="_blank">Deploy transaction</a> </div>
     }
 
     if (winner) {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;
       if (last) {
-        end = <div className="end"><a href={`https://whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
       if (last) {
-        end = <div className="end"><a href={`https://whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
 

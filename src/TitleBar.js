@@ -10,10 +10,6 @@ function TitleBar(props) {
 
     const onStart = async (e) => {
 
-        if (!web3.wallet) {
-            alert("Pelease create wallet first")
-            return;
-        }
         let amount = parseInt(amountRef.current.value);
 
         if (amount < 50000) {
@@ -23,11 +19,13 @@ function TitleBar(props) {
 
         if (!isNaN(amount)) {
 
-            let balance = await web3.wallet.getbalance();
+            if(web3.wallet) {
+                let balance = await web3.wallet.getbalance();
         
-            if (amount > balance) {
-                alert("Not enough funds. Please fund your wallet address first");
-                return;
+                if (amount > balance) {
+                    alert("Not enough funds. Please fund your wallet address first");
+                    return;
+                }
             }
 
             props.onStart(amount);

@@ -1,10 +1,9 @@
-import React from 'react';
 
 const Square = props => {
 
 
 
-  let tx = props.value ? `https://whatsonchain.com/tx/${props.value.tx}` : "";
+  let tx = props.value ? `https://test.whatsonchain.com/tx/${props.value.tx}` : "";
   let icon = props.value ? <div className='squareicon'>{props.value.n}</div> : "";
   return (
     <div className="squarewapper">

@@ -2,10 +2,10 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
-import { PubKey } from "scryptlib";
-import { web3, SensiletWallet } from "./web3";
-import Balance from "./balance";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
+import { SensiletWallet, web3 } from "./web3";
+import { PubKey } from "scryptlib/dist";
+import Balance from "./balance";
 import Auth from "./auth";
 
 
@@ -22,6 +22,7 @@ async function fetchContract(alicePubKey, bobPubKey) {
   );
 }
 
+
 function App() {
 
   const ref = React.createRef();
@@ -36,19 +37,20 @@ function App() {
   useEffect(async () => {
 
     const timer = setTimeout(async ()=> {
-      web3.setWallet(new SensiletWallet())
-      const isConnected = await web3.wallet.isConnected();
-      console.log("sensilet isConnected: ", isConnected);
-  
+
       const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
         PlayerPublicKey.get(Player.Bob))
-      
+
+      web3.setWallet(new SensiletWallet());
+
+      const isConnected = await web3.wallet.isConnected();
+
       updateStates({
         started: Object.keys(GameData.get()).length > 0,
         isConnected: isConnected,
         instance: instance
       })
-  
+
     }, 100)
 
 
@@ -60,9 +62,10 @@ function App() {
 
   const startGame = async (amount) => {
 
-    if (web3.wallet && states.instance) {
+    if(web3.wallet && states.instance) {
 
       web3.deploy(states.instance, amount).then(rawTx => {
+
 
         let gameStates = {
           amount: amount,
@@ -76,7 +79,7 @@ function App() {
           currentStepNumber: 0,
           isAliceTurn: true,
         };
-  
+
         ContractUtxos.add(rawTx);
         GameData.set(gameStates);
         CurrentPlayer.set(Player.Alice);
@@ -84,8 +87,12 @@ function App() {
         updateStates(Object.assign({}, states, {
           started: true
         }))
+
       })
     }
+
+    
+    
   };
 
   const cancelGame = async () => {
@@ -94,7 +101,7 @@ function App() {
     CurrentPlayer.set(Player.Alice);
 
     if(states.instance) {
-      // restore states
+      // reset states
       states.instance.isAliceTurn = true;
       states.instance.board = [0,0,0,0,0,0,0,0,0];
     }
@@ -118,8 +125,7 @@ function App() {
           onCancel={cancelGame}
           started={states.started}
         />
-        <Game ref={ref} contractInstance={states.instance} />
-
+        <Game ref={ref} contractInstance={states.instance}/>
         {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
     </div>

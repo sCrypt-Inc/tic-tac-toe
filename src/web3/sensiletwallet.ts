@@ -1,13 +1,13 @@
-import { NetWork, UTXO, wallet, SignType } from './wallet';
-import { bsv } from 'scryptlib/dist';
-import Whatsonchain from './whatsonchain';
+import { UTXO, wallet, SignType } from './wallet';
+import { bsv } from 'scryptlib';
+import { NetWork, Whatsonchain} from './whatsonchain';
 
 
 export class SensiletWallet extends wallet {
   static DEBUG_TAG = 'Sensilet';
   sensilet: any;
 
-  constructor(network: NetWork = NetWork.Mainnet) {
+  constructor(network: NetWork = NetWork.Testnet) {
     super(network);
     if (typeof (window as any).sensilet !== 'undefined') {
       console.log(SensiletWallet.DEBUG_TAG, 'Sensilet is installed!');
@@ -73,7 +73,7 @@ export class SensiletWallet extends wallet {
       list:[
         {
           txHex: rawtx,
-          address: getAddressFromP2PKH(script),
+          address: getAddressFromP2PKH(script, this.network),
           scriptHex: script,
           inputIndex: inputIndex,
           satoshis: satoshis,
@@ -155,10 +155,10 @@ export class SensiletWallet extends wallet {
   }
 }
 
-function getAddressFromP2PKH(script: string) : string {
+function getAddressFromP2PKH(script: string, network: NetWork) : string {
   const asm = bsv.Script.fromHex(script).toASM();
   //OP_DUP OP_HASH160 ${address} OP_EQUALVERIFY OP_CHECKSIG
   const pubKeyHash = asm.split(' ')[2]; //get address from script
-  const address = new bsv.Address.fromHex(`00${pubKeyHash}`).toString();
+  const address = new bsv.Address.fromHex(`${network === NetWork.Testnet ?  '6f' : '00'}${pubKeyHash}`).toString();
   return address
 }

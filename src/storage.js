@@ -1,4 +1,4 @@
-import { PubKey, toHex, bsv } from "scryptlib";
+import { toHex, bsv } from "scryptlib";
 
 
 export const Player = {

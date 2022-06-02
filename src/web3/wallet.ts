@@ -1,3 +1,4 @@
+import { Whatsonchain, NetWork } from "./whatsonchain";
 
 export interface UTXO {
   txId: number,
@@ -17,12 +18,6 @@ export interface Account {
 }
 
 
-export enum NetWork {
-  Testnet = 'testnet',
-  Regtest = 'regtest',
-  Mainnet = 'mainnet',
-  STN = 'STN'
-}
 
 
 export enum SignType {
@@ -41,6 +36,7 @@ export abstract class wallet {
 
   constructor(network: NetWork) {
     this.network = network;
+    Whatsonchain.setNetwork(this.network);
   }
 
   // Check if the wallet is ready. If not ready, use requestAccount to setup.

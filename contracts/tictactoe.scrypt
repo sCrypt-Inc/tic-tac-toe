@@ -1,9 +1,7 @@
-
 contract TicTacToe {
     PubKey alice;
     PubKey bob;
 
-    // if it is alice's turn to play
     @state
     bool isAliceTurn;
 
@@ -18,19 +16,18 @@ contract TicTacToe {
     static const int BOB = 2;
 
     public function move(int n, Sig sig, int amount, SigHashPreimage txPreimage) {
-
         require(Tx.checkPreimage(txPreimage));
         require(n >= 0 && n < N);
 
-        // not filled
+        // square not filled
         require(this.board[n] == EMPTY);
 
         int play = this.isAliceTurn ? ALICE : BOB;
         PubKey player = this.isAliceTurn ? this.alice : this.bob;
 
-        // ensure it's player's turn
         require(checkSig(sig, player));
-        // make the move
+
+        // update state properties to make the move
         this.board[n] = play;
         this.isAliceTurn = !this.isAliceTurn;
 
@@ -50,16 +47,17 @@ contract TicTacToe {
             outputs = aliceOutput + bobOutput;
         }
         else {
-            bytes scriptCode_ = this.getStateScript();
-            bytes output = Utils.buildOutput(scriptCode_, amount);
+            // serialize the state of the contract
+            bytes outputScript = this.getStateScript();
+            bytes output = Utils.buildOutput(outputScript, amount);
             outputs = output;
         }
 
+        // make sure the transaction contains the expected outputs
         require(hash256(outputs) == SigHash.hashOutputs(txPreimage));
     }
 
     function won(int play) : bool {
-        // three in a row, a column, or a diagonal
         int[8][3] lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
         bool anyLine = false;
@@ -71,7 +69,6 @@ contract TicTacToe {
 
             anyLine = anyLine || line;
         }
-
         return anyLine;
     }
 
