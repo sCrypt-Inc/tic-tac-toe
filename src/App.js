@@ -41,10 +41,14 @@ function App() {
         PlayerPublicKey.get(Player.Bob))
 
       const wallet =  new SensiletWallet();
-      const n = await wallet.getNetwork();
-      web3.setWallet(new SensiletWallet(n));
-
+      web3.setWallet(wallet);
       const isConnected = await web3.wallet.isConnected();
+
+      if(isConnected) {
+        const n = await wallet.getNetwork();
+        web3.setWallet(new SensiletWallet(n));
+      } 
+
 
       updateStates({
         started: Object.keys(GameData.get()).length > 0,
