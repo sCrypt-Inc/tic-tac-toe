@@ -77,4 +77,7 @@ export abstract class wallet {
     purpose?: string
   }): Promise<string>;
 
+  //returns current network
+  abstract getNetwork(options?: { purpose?: string; }): Promise<NetWork>;
+
 }
