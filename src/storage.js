@@ -1,4 +1,5 @@
 import { toHex, bsv } from "scryptlib";
+import { NetWork } from "./web3";
 
 
 export const Player = {
@@ -122,3 +123,13 @@ export const ContractUtxos = {
   },
 };
 
+
+export const CurrentNetwork = {
+  get: () => {
+    return localStorage[`network`] === 'main' ?  NetWork.Mainnet : NetWork.Testnet;
+  },
+  switch: () => {
+    const network = CurrentNetwork.get();
+    localStorage.setItem(`network`, network == NetWork.Mainnet ? 'test' : 'main');
+  },
+};

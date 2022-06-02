@@ -2,12 +2,11 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar from "./TitleBar";
+import { PubKey } from "scryptlib";
+import Balance from "./balance";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
 import { SensiletWallet, web3 } from "./web3";
-import { PubKey } from "scryptlib/dist";
-import Balance from "./balance";
 import Auth from "./auth";
-
 
 async function fetchContract(alicePubKey, bobPubKey) {
   let { contractClass: TictactoeContractClass } = await web3.loadContract(

@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  position: relative;
 }
 
 .App-logo {
@@ -21,6 +22,22 @@
   align-items: center;
   font-size: calc(10px + 2vmin);
   color: white;
+}
+
+.App-settings {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+
+
+.App-settings span {
+  text-align: center;
+  color: #ffffff;
+  padding-right: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+
 }
 
 .App-link {
