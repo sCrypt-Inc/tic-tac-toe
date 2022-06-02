@@ -2,7 +2,7 @@ import React from 'react';
 import { bsv,getPreimage,signTx } from 'scryptlib/dist';
 import Board from './Board';
 import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
-import { web3 } from './web3';
+import { web3, Whatsonchain } from './web3';
 
 
 
@@ -288,19 +288,20 @@ class Game extends React.Component {
 
     let bet;
     if (deploy) {
-      bet = <div className="bet"><a href={`https://test.whatsonchain.com/tx/${deploy.utxo.txId}`} target="_blank">Deploy transaction</a> </div>
+      
+      bet = <div className="bet"><a href={Whatsonchain.getTxUri(deploy.utxo.txId)} target="_blank">Deploy transaction</a> </div>
     }
 
     if (winner) {
       let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
       status = `Winner is ${winnerName}`;
       if (last) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={Whatsonchain.getTxUri(deploy.utxo.txId)} target="_blank">Withdraw transaction</a> </div>
       }
     } else if (history.length === 10) {
       status = 'Draw. No one won.';
       if (last) {
-        end = <div className="end"><a href={`https://test.whatsonchain.com/tx/${last.utxo.txId}`} target="_blank">Withdraw transaction</a> </div>
+        end = <div className="end"><a href={Whatsonchain.getTxUri(deploy.utxo.txId)} target="_blank">Withdraw transaction</a> </div>
       }
     } else {
 

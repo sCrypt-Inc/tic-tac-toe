@@ -40,7 +40,9 @@ function App() {
       const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
         PlayerPublicKey.get(Player.Bob))
 
-      web3.setWallet(new SensiletWallet());
+      const wallet =  new SensiletWallet();
+      const n = await wallet.getNetwork();
+      web3.setWallet(new SensiletWallet(n));
 
       const isConnected = await web3.wallet.isConnected();
 
@@ -87,6 +89,10 @@ function App() {
           started: true
         }))
 
+      })
+      .catch(e => {
+        alert(e.message)
+        console.error(e)
       })
     }
 

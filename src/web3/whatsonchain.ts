@@ -8,11 +8,11 @@ export enum NetWork {
 }
 export class Whatsonchain {
     static API_PREFIX = ``;
-
+    static TX_URL_PREFIX = ``;
     static setNetwork(network: NetWork) {
 
         Whatsonchain.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Testnet ? 'test' : 'main'}`;
-        console.log('setNetwork', Whatsonchain.API_PREFIX)
+        Whatsonchain.TX_URL_PREFIX = `${network === NetWork.Testnet ? 'https://test.whatsonchain.com/tx' : 'https://whatsonchain.com/tx'}`;
     }
     static async sendRawTransaction(rawTx: string): Promise<string> {
         // 1 second per KB
@@ -33,9 +33,12 @@ export class Whatsonchain {
     }
 
     static async listUnspent(address: string): Promise<any> {
-        console.log('listUnspent', Whatsonchain.API_PREFIX)
         return axios.get(`${Whatsonchain.API_PREFIX}/address/${address}/unspent`, {
             timeout: 10000
         });
+    }
+
+    static getTxUri(txid: string): string {
+        return `${Whatsonchain.TX_URL_PREFIX}/${txid}`;
     }
 }

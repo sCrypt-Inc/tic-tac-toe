@@ -53,6 +53,9 @@ export class web3 {
     return wallet.listUnspent(amountInContract, {
       purpose: 'tic-tac-toe'
     }).then((utxos: UTXO[]) => {
+      if(utxos.length === 0) {
+        throw new Error('no utxo available')
+      }
       const tx = new bsv.Transaction();
       tx.from([utxos[0]])
         .addOutput(new bsv.Transaction.Output({

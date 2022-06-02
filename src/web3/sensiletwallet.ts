@@ -153,6 +153,13 @@ export class SensiletWallet extends wallet {
   async getPublicKey(options?: { purpose?: string; }): Promise<string> {
     return this.sensilet.getPublicKey();
   }
+
+
+  async getNetwork(options?: { purpose?: string; }): Promise<NetWork> {
+    const address = await this.sensilet.getAddress();
+    const a = new bsv.Address.fromString(address);
+    return a.network.name === 'testnet' ? NetWork.Testnet : NetWork.Mainnet;
+  }
 }
 
 function getAddressFromP2PKH(script: string, network: NetWork) : string {
