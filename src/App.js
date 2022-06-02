@@ -10,7 +10,7 @@ import Auth from "./auth";
 
 async function fetchContract(alicePubKey, bobPubKey) {
   let { contractClass: TictactoeContractClass } = await web3.loadContract(
-    "/tic-tac-toe/tictactoe_release_desc.json"
+    "/tic-tac-toe/tictactoe_release_desc0.json"
   );
 
   return new TictactoeContractClass(
