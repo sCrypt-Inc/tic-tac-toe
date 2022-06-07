@@ -1,7 +1,7 @@
 import "./App.css";
-import Game from "./Game";
+import Game, { calculateWinner } from "./Game";
 import React, { useState, useEffect } from "react";
-import TitleBar from "./TitleBar";
+import TitleBar, { GameStatus } from "./TitleBar";
 import { PubKey } from "scryptlib";
 import Balance from "./balance";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
@@ -27,7 +27,7 @@ function App() {
   const ref = React.createRef();
 
   const [states, updateStates] = useState({
-    started: false,
+    gameStatus: GameStatus.wait,
     isConnected: false,
     instance: null
   });
@@ -50,11 +50,27 @@ function App() {
       } 
 
 
-      updateStates({
-        started: Object.keys(GameData.get()).length > 0,
+      updateStates(Object.assign({}, states, {
         isConnected: isConnected,
         instance: instance
-      })
+      }))
+
+      const gameState = GameData.get();
+
+      if(Object.keys(GameData.get()).length > 0) {
+        updateStates({
+          gameStatus: gameState.status,
+          isConnected: isConnected,
+          instance: instance
+        })
+
+      } else {
+        updateStates({
+          gameStatus: GameStatus.wait,
+          isConnected: isConnected,
+          instance: instance
+        })
+      }
 
     }, 100)
 
@@ -83,6 +99,7 @@ function App() {
           ],
           currentStepNumber: 0,
           isAliceTurn: true,
+          status: GameStatus.progress
         };
 
         ContractUtxos.add(rawTx);
@@ -90,7 +107,7 @@ function App() {
         CurrentPlayer.set(Player.Alice);
 
         updateStates(Object.assign({}, states, {
-          started: true
+          gameStatus: GameStatus.progress
         }))
 
       })
@@ -118,11 +135,24 @@ function App() {
     ref.current.clean();
 
     updateStates({
-      started: false,
+      gameStatus: GameStatus.wait,
       isConnected: states.isConnected,
       instance: states.instance
     })
 
+  };
+
+  const updateGameStatus = async () => {
+    const gameState = GameData.get();
+    if(Object.keys(GameData.get()).length > 0) {
+      updateStates(Object.assign({}, states, {
+        gameStatus: gameState.status
+      }))
+    } else {
+      updateStates({
+        gameStatus: GameStatus.wait
+      })
+    }
   };
 
   return (
@@ -132,9 +162,9 @@ function App() {
         <TitleBar
           onStart={startGame}
           onCancel={cancelGame}
-          started={states.started}
+          gameStatus={states.gameStatus}
         />
-        <Game ref={ref} contractInstance={states.instance}/>
+        <Game ref={ref} contractInstance={states.instance} updateGameStatus={updateGameStatus}/>
         {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
     </div>

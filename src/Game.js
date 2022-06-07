@@ -2,6 +2,7 @@ import React from 'react';
 import { bsv,getPreimage,signTx } from 'scryptlib/dist';
 import Board from './Board';
 import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
+import { GameStatus } from './TitleBar';
 import { web3, Whatsonchain } from './web3';
 
 
@@ -141,7 +142,13 @@ class Game extends React.Component {
     const backupState = Object.assign({}, this.state);
 
     squares[i] = { label: this.state.isAliceTurn ? 'X' : 'O' };
+
+    const contractUtxo = ContractUtxos.getlast().utxo;
+
+    let winner = calculateWinner(squares).winner;
+
     const gameState = {
+      status: (winner || history.length >= 9) ? GameStatus.over : GameStatus.progress,
       history: history.concat([
         {
           squares,
@@ -156,10 +163,6 @@ class Game extends React.Component {
 
     // update states
     this.setState(gameState);
-
-    const contractUtxo = ContractUtxos.getlast().utxo;
-
-    let winner = calculateWinner(squares).winner;
 
     web3.call(contractUtxo, (tx) => {
 
@@ -178,13 +181,13 @@ class Game extends React.Component {
         tx.setOutput(0, (tx) => {
           return new bsv.Transaction.Output({
             script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Alice)),
-            satoshis: (contractUtxo.satoshis - tx.getEstimateFee()) /2,
+            satoshis: Math.ceil((contractUtxo.satoshis - tx.getEstimateFee()) /2),
           })
         })
         .setOutput(1, (tx) => {
           return new bsv.Transaction.Output({
             script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Bob)),
-            satoshis: (contractUtxo.satoshis - tx.getEstimateFee()) /2,
+            satoshis: Math.ceil((contractUtxo.satoshis - tx.getEstimateFee()) /2),
           })
         })
 
@@ -207,7 +210,14 @@ class Game extends React.Component {
           const privateKey = new bsv.PrivateKey.fromWIF(PlayerPrivkey.get(CurrentPlayer.get()));
           const sig = signTx(tx, privateKey, output.script, output.satoshis)
 
-          const amount = contractUtxo.satoshis - tx.getEstimateFee();
+          let amount = 0;
+          if (winner) { // Current Player won
+            amount = contractUtxo.satoshis - tx.getEstimateFee();
+          } else if (history.length >= 9) {
+            amount = Math.ceil((contractUtxo.satoshis - tx.getEstimateFee()) /2)
+          } else {
+            amount = contractUtxo.satoshis - tx.getEstimateFee();
+          }
 
           if(amount < 1) {
             alert('Not enough funds.');
@@ -251,6 +261,7 @@ class Game extends React.Component {
       })
       this.setState(gameState)
       GameData.update(gameState)
+      this.props.updateGameStatus();
       this.attachState();
     })
     .catch(e => {

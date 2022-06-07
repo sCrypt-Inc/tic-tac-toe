@@ -2,7 +2,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import { web3 } from './web3';
-
+export const GameStatus = {
+    "wait":1,
+    "progress":2,
+    "over":3
+}
 
 function TitleBar(props) {
 
@@ -12,8 +16,8 @@ function TitleBar(props) {
 
         let amount = parseInt(amountRef.current.value);
 
-        if (amount < 50000) {
-            alert("invalid amount, at least 50000 satoshis")
+        if (amount < 90000) {
+            alert("invalid amount, at least 90000 satoshis")
             return;
         }
 
@@ -39,10 +43,17 @@ function TitleBar(props) {
     }
 
 
-    if (props.started) {
+    if (props.gameStatus === GameStatus.progress) {
         return (
             <div>
                 The game is in progress ...
+                <button className="pure-button cancel" onClick={onCancel}>Restart</button>
+            </div>
+        );
+    } else if (props.gameStatus === GameStatus.over) {
+        return (
+            <div>
+                The game is over.
                 <button className="pure-button cancel" onClick={onCancel}>Restart</button>
             </div>
         );
@@ -50,7 +61,7 @@ function TitleBar(props) {
         return (
             <div>
                 <label>Bet amount:
-                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={50000} placeholder="in satoshis" />
+                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={90000} placeholder="in satoshis" />
                 </label>
                 <button className="start" onClick={onStart}>Start</button>
             </div>
