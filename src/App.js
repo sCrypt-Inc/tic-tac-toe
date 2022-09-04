@@ -7,6 +7,7 @@ import Balance from "./balance";
 import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
 import { SensiletWallet, web3 } from "./web3";
 import Auth from "./auth";
+import { Footer } from "./Footer";
 
 async function fetchContract(alicePubKey, bobPubKey) {
   let { contractClass: TictactoeContractClass } = await web3.loadContract(
@@ -167,6 +168,7 @@ function App() {
         <Game ref={ref} contractInstance={states.instance} updateGameStatus={updateGameStatus}/>
         {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
+      <Footer />
     </div>
   );
 }

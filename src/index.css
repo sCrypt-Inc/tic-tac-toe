@@ -11,3 +11,24 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+footer {
+  padding-bottom: 3em;
+  color: white;
+}
+footer a {
+  color:aliceblue;
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--regular);
+}
+
+footer a:hover {
+  color:blue;
+}
+
+footer a:visited {
+  color:blue;
+}
+
