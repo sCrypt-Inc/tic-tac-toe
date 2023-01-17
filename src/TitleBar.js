@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { SensiletProvider, SensiletSigner } from 'scrypt-ts';
 
-import { web3 } from './web3';
+import { Utils } from './utils';
 export const GameStatus = {
     "wait":1,
     "progress":2,
@@ -22,17 +23,20 @@ function TitleBar(props) {
         }
 
         if (!isNaN(amount)) {
+            const provider = new SensiletProvider();
+            const signer = provider.getSigner();
+            const isConnected = await signer.isConnected()
+            if(isConnected) {
+                const balance = await signer.getBalance();
 
-            if(web3.wallet) {
-                let balance = await web3.wallet.getbalance();
-        
-                if (amount > balance) {
+                if (amount > balance.confirmed + balance.unconfirmed) {
                     alert("Not enough funds. Please fund your wallet address first");
                     return;
                 }
+                props.onStart(amount);
             }
 
-            props.onStart(amount);
+   
         } else {
             console.error(`${amountRef.current.value} is not number`)
         }

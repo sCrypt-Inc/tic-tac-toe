@@ -25,3 +25,5 @@ yarn-error.log*
 /out
 
 .vscode
+
+scrypt.index.json

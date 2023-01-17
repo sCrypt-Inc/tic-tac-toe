@@ -1,5 +1,4 @@
-import { toHex, bsv } from "scryptlib";
-import { NetWork } from "./web3";
+import { toHex, bsv } from "scrypt-ts";
 
 
 export const Player = {
@@ -97,6 +96,7 @@ export const ContractUtxos = {
       },
       rawTx: rawTx
     };
+    
     utxos.push(utxo)
     ContractUtxos.set(utxos)
 
@@ -126,10 +126,10 @@ export const ContractUtxos = {
 
 export const CurrentNetwork = {
   get: () => {
-    return localStorage[`network`] === 'main' ?  NetWork.Mainnet : NetWork.Testnet;
+    return localStorage[`network`] === 'livenet' ?  bsv.Networks.mainnet : bsv.Networks.livenet;
   },
   switch: () => {
     const network = CurrentNetwork.get();
-    localStorage.setItem(`network`, network == NetWork.Mainnet ? 'test' : 'main');
+    localStorage.setItem(`network`, network.name);
   },
 };

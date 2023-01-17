@@ -2,25 +2,15 @@ import "./App.css";
 import Game, { calculateWinner } from "./Game";
 import React, { useState, useEffect } from "react";
 import TitleBar, { GameStatus } from "./TitleBar";
-import { PubKey } from "scryptlib";
+import { PubKey } from "scrypt-ts";
 import Balance from "./balance";
-import {GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer} from "./storage";
-import { SensiletWallet, web3 } from "./web3";
+import { GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer } from "./storage";
+import { Utils } from "./utils";
 import Auth from "./auth";
 import { Footer } from "./Footer";
+import { TicTacToe } from "./contracts/tictactoe"
+import { SensiletProvider } from "scrypt-ts";
 
-async function fetchContract(alicePubKey, bobPubKey) {
-  let { contractClass: TictactoeContractClass } = await web3.loadContract(
-    "/tic-tac-toe/tictactoe_release_desc0.json"
-  );
-
-  return new TictactoeContractClass(
-    new PubKey(alicePubKey),
-    new PubKey(bobPubKey),
-    true,
-    [0,0,0,0,0,0,0,0,0]
-  );
-}
 
 
 function App() {
@@ -33,61 +23,76 @@ function App() {
     instance: null
   });
 
-  // init web3 wallet
-  useEffect(async () => {
+  useEffect(() => {
+    async function fetchContract(alicePubKey, bobPubKey) {
 
-    const timer = setTimeout(async ()=> {
+      let artifact = await Utils.loadContractArtifact(
+        `${process.env.PUBLIC_URL}/${TicTacToe.name}.json`
+      );
 
-      const instance = await fetchContract(PlayerPublicKey.get(Player.Alice),
-        PlayerPublicKey.get(Player.Bob))
+      let info = await Utils.loadTransformInfo(
+        `${process.env.PUBLIC_URL}/${TicTacToe.name}.transformer.json`
+      );
 
-      const wallet =  new SensiletWallet();
-      web3.setWallet(wallet);
-      const isConnected = await web3.wallet.isConnected();
+      TicTacToe.init(info, artifact);
 
-      if(isConnected) {
-        const n = await wallet.getNetwork();
-        web3.setWallet(new SensiletWallet(n));
-      } 
-
-
-      updateStates(Object.assign({}, states, {
-        isConnected: isConnected,
-        instance: instance
-      }))
-
-      const gameState = GameData.get();
-
-      if(Object.keys(GameData.get()).length > 0) {
-        updateStates({
-          gameStatus: gameState.status,
-          isConnected: isConnected,
-          instance: instance
-        })
-
-      } else {
-        updateStates({
-          gameStatus: GameStatus.wait,
-          isConnected: isConnected,
-          instance: instance
-        })
-      }
-
-    }, 100)
-
-
-    return () => {
-      clearTimeout(timer)
+      return new TicTacToe(
+        PubKey(alicePubKey),
+        PubKey(bobPubKey),
+        true,
+        [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n]
+      ).markAsGenesis();
     }
+
+    fetchContract(PlayerPublicKey.get(Player.Alice), PlayerPublicKey.get(Player.Bob))
+      .then(async instance => {
+        console.log('instance', instance)
+
+        const sensiletProvider = new SensiletProvider();
+
+        Utils.setNetwork(sensiletProvider.getNetwork().name === 'testnet');
+
+        const isConnected = await sensiletProvider.getSigner().isConnected();
+
+        updateStates(Object.assign({}, states, {
+          isConnected: isConnected,
+          instance: instance
+        }))
+        const gameState = GameData.get();
+
+        if (Object.keys(GameData.get()).length > 0) {
+          updateStates({
+            gameStatus: gameState.status,
+            isConnected: isConnected,
+            instance: instance
+          })
+
+        } else {
+          updateStates({
+            gameStatus: GameStatus.wait,
+            isConnected: isConnected,
+            instance: instance
+          })
+        }
+
+      })
+      .catch(e => {
+        console.error('fetchContract fails', e);
+      })
 
   }, []);
 
   const startGame = async (amount) => {
 
-    if(web3.wallet && states.instance) {
+    if (states.instance) {
 
-      web3.deploy(states.instance, amount).then(rawTx => {
 
+      try {
+
+        const provider = new SensiletProvider();
+
+        await states.instance.connect(provider.getSigner());
+        const deployTx = await states.instance.deploy(amount);
 
         let gameStates = {
           amount: amount,
@@ -99,27 +104,23 @@ function App() {
             },
           ],
           currentStepNumber: 0,
-          isAliceTurn: true,
+          is_alice_turn: true,
           status: GameStatus.progress
         };
 
-        ContractUtxos.add(rawTx);
+        ContractUtxos.add(deployTx.toString());
         GameData.set(gameStates);
         CurrentPlayer.set(Player.Alice);
 
         updateStates(Object.assign({}, states, {
           gameStatus: GameStatus.progress
         }))
+      } catch (error) {
+        alert(error.message)
+      }
 
-      })
-      .catch(e => {
-        alert(e.message)
-        console.error(e)
-      })
+
     }
-
-    
-    
   };
 
   const cancelGame = async () => {
@@ -127,10 +128,10 @@ function App() {
     ContractUtxos.clear();
     CurrentPlayer.set(Player.Alice);
 
-    if(states.instance) {
+    if (states.instance) {
       // reset states
-      states.instance.isAliceTurn = true;
-      states.instance.board = [0,0,0,0,0,0,0,0,0];
+      states.instance.is_alice_turn = true;
+      states.instance.board = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     }
 
     ref.current.clean();
@@ -145,7 +146,7 @@ function App() {
 
   const updateGameStatus = async () => {
     const gameState = GameData.get();
-    if(Object.keys(GameData.get()).length > 0) {
+    if (Object.keys(GameData.get()).length > 0) {
       updateStates(Object.assign({}, states, {
         gameStatus: gameState.status
       }))
@@ -154,6 +155,12 @@ function App() {
         gameStatus: GameStatus.wait
       })
     }
+  };
+
+  const updateContractInstance = async (instance) => {
+    updateStates(Object.assign({}, states, {
+      instance: instance
+    }))
   };
 
   return (
@@ -165,7 +172,7 @@ function App() {
           onCancel={cancelGame}
           gameStatus={states.gameStatus}
         />
-        <Game ref={ref} contractInstance={states.instance} updateGameStatus={updateGameStatus}/>
+        <Game ref={ref} contractInstance={states.instance} updateGameStatus={updateGameStatus} updateContractInstance={updateContractInstance} />
         {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
       </header>
       <Footer />

@@ -1,27 +1,26 @@
 import { useState, useEffect } from "react";
-import { NetWork, web3 } from "./web3";
+import { SensiletProvider } from "scrypt-ts";
 const Balance = (props) => {
   const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState("");
   const [network, setNetwork] = useState("");
-  useEffect(async () => {
-    if (web3.wallet) {
-      web3.wallet.getbalance().then((balance) => {
-        setBalance(balance);
-      });
+  useEffect(() => {
+    const  sensiletProvider = new SensiletProvider();
 
-      web3.wallet.getRawChangeAddress().then((address) => {
-        setAddress(address);
-      });
+    sensiletProvider.getBalance().then(balance => setBalance(balance.total));
 
-      web3.wallet.getNetwork().then((network) => {
-        if(network === NetWork.Testnet) {
-          setNetwork('Testnet')
-        } else {
-          setNetwork('Mainnet')
-        }
-      });
+    sensiletProvider.getSigner().getDefaultAddress().then(address => {
+      setAddress(address.toString())
+    })
+
+    const network = sensiletProvider.getNetwork();
+
+    if(network.name === 'testnet') {
+      setNetwork('Testnet')
+    } else {
+      setNetwork('Mainnet')
     }
+
   }, []);
 
     return (

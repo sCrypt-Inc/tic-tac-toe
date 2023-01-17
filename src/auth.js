@@ -1,10 +1,14 @@
-import { web3 } from "./web3";
+import { SensiletProvider } from "scrypt-ts";
 
 const Auth = (props) => {
 
   const sensiletLogin = async (e) => {
     try {
-      const res = await web3.wallet.requestAccount("tic-tac-toe");
+
+      const provider = new SensiletProvider();
+      const signer = provider.getSigner();
+
+      const res = await signer.getSensilet().requestAccount("tic-tac-toe");
       if (res) {
         window.location.reload();
       }

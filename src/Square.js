@@ -1,10 +1,10 @@
-import { Whatsonchain } from "./web3";
+import { Utils } from "./utils";
 
 const Square = props => {
 
 
 
-  let tx = props.value ? Whatsonchain.getTxUri(props.value.tx) : "";
+  let tx = props.value ? Utils.getTxUri(props.value.tx) : "";
   let icon = props.value ? <div className='squareicon'>{props.value.n}</div> : "";
   return (
     <div className="squarewapper">
