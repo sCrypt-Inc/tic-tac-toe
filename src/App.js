@@ -50,7 +50,9 @@ function App() {
 
         const sensiletProvider = new SensiletProvider();
 
-        Utils.setNetwork(sensiletProvider.getNetwork().name === 'testnet');
+        const network = await sensiletProvider.getNetwork();
+
+        Utils.setNetwork(network.name === 'testnet');
 
         const isConnected = await sensiletProvider.getSigner().isConnected();
 

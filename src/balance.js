@@ -13,13 +13,13 @@ const Balance = (props) => {
       setAddress(address.toString())
     })
 
-    const network = sensiletProvider.getNetwork();
-
-    if(network.name === 'testnet') {
-      setNetwork('Testnet')
-    } else {
-      setNetwork('Mainnet')
-    }
+    sensiletProvider.getNetwork().then(network => {
+      if(network.name === 'testnet') {
+        setNetwork('Testnet')
+      } else {
+        setNetwork('Mainnet')
+      }
+    });
 
   }, []);
 
