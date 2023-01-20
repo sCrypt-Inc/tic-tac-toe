@@ -2,7 +2,7 @@
   "success": true,
   "errors": [],
   "scryptfile": "src/contracts/tictactoe.scrypt",
-  "sourceMapFile": "file:///Users/hh/code/tic-tac-toe/public/src/contracts/tictactoe.scrypt.map",
+  "sourceMapFile": "file:///D:/code/tic-tac-toe/out/src/contracts/tictactoe.scrypt.map",
   "ctxMethods": [
     "move"
   ]

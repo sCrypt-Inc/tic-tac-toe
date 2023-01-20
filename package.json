@@ -16,7 +16,7 @@
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.3",
     "react-switch": "^6.0.0",
-    "scrypt-ts": "=0.1.5-beta.15",
+    "scrypt-ts": "=0.1.5-beta.16",
     "web-vitals": "^1.1.0"
   },
   "scripts": {
@@ -24,6 +24,7 @@
     "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "node ./setup.js",
     "test": "react-scripts test",
     "single-test": "mocha --reporter spec --timeout 120000 ",
     "td": "mocha --reporter spec test/**/*.js --timeout 600000",
