@@ -9,7 +9,7 @@ import { Utils } from "./utils";
 import Auth from "./auth";
 import { Footer } from "./Footer";
 import { TicTacToe } from "./contracts/tictactoe"
-import { SensiletProvider } from "scrypt-ts";
+import { SensiletProvider, ProviderEvent } from "scrypt-ts";
 
 
 
@@ -50,25 +50,28 @@ function App() {
 
         const sensiletProvider = new SensiletProvider();
 
-        const network = await sensiletProvider.getNetwork();
-
-        Utils.setNetwork(network.name === 'testnet');
-
         const isConnected = await sensiletProvider.getSigner().isConnected();
 
-        updateStates(Object.assign({}, states, {
-          isConnected: isConnected,
-          instance: instance
-        }))
-        const gameState = GameData.get();
+        if(isConnected) {
 
-        if (Object.keys(GameData.get()).length > 0) {
-          updateStates({
-            gameStatus: gameState.status,
-            isConnected: isConnected,
-            instance: instance
+          const sensiletProvider = new SensiletProvider();
+
+          sensiletProvider.on(ProviderEvent.Connected, async (provider) => {
+            const network = await provider.getNetwork();
+            Utils.setNetwork(network.name === 'testnet');
           })
 
+          await sensiletProvider.connect();
+
+          const gameState = GameData.get();
+  
+          updateStates(Object.assign({}, states, {
+            gameStatus:  Object.keys(gameState).length > 0 ? gameState.status : GameStatus.wait,
+            isConnected: isConnected,
+            instance: instance
+          }))
+
+          
         } else {
           updateStates({
             gameStatus: GameStatus.wait,
@@ -76,7 +79,6 @@ function App() {
             instance: instance
           })
         }
-
       })
       .catch(e => {
         console.error('fetchContract fails', e);
@@ -93,7 +95,7 @@ function App() {
 
         const provider = new SensiletProvider();
 
-        await states.instance.connect(provider.getSigner());
+        await states.instance.connect(provider);
         const deployTx = await states.instance.deploy(amount);
 
         let gameStates = {
@@ -118,7 +120,7 @@ function App() {
           gameStatus: GameStatus.progress
         }))
       } catch (error) {
-        alert(error.message)
+        alert("deployed failed:" + error.message)
       }
 
 

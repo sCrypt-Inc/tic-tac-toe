@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SensiletProvider, SensiletSigner } from 'scrypt-ts';
 
-import { Utils } from './utils';
 export const GameStatus = {
     "wait":1,
     "progress":2,

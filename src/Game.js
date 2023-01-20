@@ -1,5 +1,5 @@
 import React from 'react';
-import { bsv, SensiletProvider } from 'scrypt-ts';
+import { bsv, SensiletProvider, ProviderEvent } from 'scrypt-ts';
 import Board from './Board';
 import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
 import { GameStatus } from './TitleBar';
@@ -245,46 +245,51 @@ class Game extends React.Component {
     })
       .seal()
 
-      const provider = new SensiletProvider();
+      const sensiletProvider = new SensiletProvider();
+
+      sensiletProvider.on(ProviderEvent.Connected, (provider) => {
 
 
-      provider.sendTransaction(tx).then(() => {
+        provider.sendTransaction(tx).then(() => {
 
-
-
-        const utxo = ContractUtxos.add(tx.toString());
-
-        this.props.updateContractInstance(newInstance);
+          const utxo = ContractUtxos.add(tx.toString());
   
-        squares[i].tx = utxo.utxo.txId;
-        squares[i].n = history.length;
+          this.props.updateContractInstance(newInstance);
+    
+          squares[i].tx = utxo.utxo.txId;
+          squares[i].n = history.length;
+    
+          if (!winner) {
+            CurrentPlayer.set(this.state.is_alice_turn ? Player.Alice : Player.Bob);
+          }
+    
+    
+          // update states
+          const newGameState = Object.assign({}, this.state, {
+            history: history.concat([
+              {
+                squares,
+                currentLocation: getLocation(i),
+                stepNumber: history.length,
+              },
+            ])
+          })
+          this.setState(newGameState)
+          GameData.update(newGameState)
+          this.props.updateGameStatus();
+          this.attachState();
+    
   
-        if (!winner) {
-          CurrentPlayer.set(this.state.is_alice_turn ? Player.Alice : Player.Bob);
-        }
-  
-  
-        // update states
-        const newGameState = Object.assign({}, this.state, {
-          history: history.concat([
-            {
-              squares,
-              currentLocation: getLocation(i),
-              stepNumber: history.length,
-            },
-          ])
         })
-        this.setState(newGameState)
-        GameData.update(newGameState)
-        this.props.updateGameStatus();
-        this.attachState();
-  
+        .catch(e => {
+          console.error("sendTransaction error:", e)
+          this.setState(backupState)
+        })
+   
+      })
 
-      })
-      .catch(e => {
-        console.error("sendTransaction error:", e)
-        this.setState(backupState)
-      })
+      sensiletProvider.connect()
+      
 
   }
 

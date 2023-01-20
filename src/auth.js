@@ -6,14 +6,10 @@ const Auth = (props) => {
     try {
 
       const provider = new SensiletProvider();
-      const signer = provider.getSigner();
-
-      const res = await signer.getSensilet().requestAccount("tic-tac-toe");
-      if (res) {
-        window.location.reload();
-      }
+      await provider.connect();
+      window.location.reload();
     } catch (error) {
-      console.error("requestAccount error", error);
+      console.error(error);
     }
   };
 
