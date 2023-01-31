@@ -35,12 +35,12 @@ export class TicTacToe extends SmartContract {
     @method()
     public move(n: bigint, sig: Sig, amount: bigint) {
         assert(n >= 0n && n < TicTacToe.BOARDLEN);
-        assert(this.board[Number(n)] == TicTacToe.EMPTY);
+        assert(this.board[Number(n)] === TicTacToe.EMPTY, `board at position ${n} is not empty: ${this.board[Number(n)]}`);
 
         let play = this.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
         let player: PubKey = this.is_alice_turn ? this.alice : this.bob;
 
-        assert(this.checkSig(sig, player));
+        assert(this.checkSig(sig, player), `checkSig failed, sig: ${sig}, pubkey: ${player}`);
         // make the move
         this.board[Number(n)] = play;
         this.is_alice_turn = !this.is_alice_turn;
@@ -64,7 +64,7 @@ export class TicTacToe extends SmartContract {
             outputs = this.buildStateOutput(amount);
         }
 
-        assert(this.ctx?.hashOutputs === hash256(outputs));
+        assert(this.ctx?.hashOutputs === hash256(outputs), "check hashOutputs failed");
     }
 
     @method()
@@ -78,7 +78,7 @@ export class TicTacToe extends SmartContract {
         for (let i = 0; i < 8; i++) {
             let line = true;
             for (let j = 0; j < 3; j++) {
-                line = line && this.board[Number(lines[i][j])] == play;
+                line = line && this.board[Number(lines[i][j])] === play;
             }
 
             anyLine = anyLine || line;
@@ -91,7 +91,7 @@ export class TicTacToe extends SmartContract {
     full() : boolean {
         let full = true;
         for (let i = 0; i < TicTacToe.BOARDLEN; i++) {
-            full = full && this.board[i] != TicTacToe.EMPTY;
+            full = full && this.board[i] !== TicTacToe.EMPTY;
         }
         return full;
     }

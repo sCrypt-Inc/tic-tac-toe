@@ -1,102 +1,119 @@
 import "./App.css";
-import Game, { calculateWinner } from "./Game";
-import React, { useState, useEffect } from "react";
+import Game, { toContractState } from "./Game";
+import React, { useState, useEffect, useRef } from "react";
 import TitleBar, { GameStatus } from "./TitleBar";
-import { PubKey } from "scrypt-ts";
+import { PubKey, toHex, WhatsonchainProvider, bsv } from "scrypt-ts";
 import Balance from "./balance";
-import { GameData, PlayerPublicKey, Player, ContractUtxos, CurrentPlayer } from "./storage";
+import { GameData, Player, ContractUtxos, CurrentPlayer } from "./storage";
 import { Utils } from "./utils";
 import Auth from "./auth";
 import { Footer } from "./Footer";
 import { TicTacToe } from "./contracts/tictactoe"
-import { SensiletProvider, ProviderEvent } from "scrypt-ts";
+import { SensiletSigner, ProviderEvent } from "scrypt-ts";
+
+
+async function initTicTacToe(signer) {
+  let artifact = await Utils.loadContractArtifact(
+    `${process.env.PUBLIC_URL}/${TicTacToe.name}.json`
+  );
+
+  let info = await Utils.loadTransformInfo(
+    `${process.env.PUBLIC_URL}/${TicTacToe.name}.transformer.json`
+  );
+
+  TicTacToe.init(info, artifact);
+
+  const pubkey = await signer.getDefaultPubKey()
+
+  const instance = new TicTacToe(
+    PubKey(toHex(pubkey)),
+    PubKey(toHex(pubkey)),
+    true,
+    [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n]
+  );
+
+  await instance.connect(signer);
+
+  const gameState = GameData.get();
+
+  if (Object.keys(gameState).length === 0 || gameState.currentStepNumber === 0) {
+    instance.markAsGenesis()
+
+  } else if (Object.keys(gameState).length > 0) {
+    const contractState = toContractState(gameState)
+    Object.assign(instance, contractState);
+  }
+
+  return instance;
+
+}
 
 
 
 function App() {
 
-  const ref = React.createRef();
+  const gameRef = React.createRef();
+
+  const instanceRef = useRef(null);
+  const signerRef = useRef(null);
+
 
   const [states, updateStates] = useState({
     gameStatus: GameStatus.wait,
     isConnected: false,
-    instance: null
   });
 
   useEffect(() => {
-    async function fetchContract(alicePubKey, bobPubKey) {
 
-      let artifact = await Utils.loadContractArtifact(
-        `${process.env.PUBLIC_URL}/${TicTacToe.name}.json`
-      );
+    const provider = new WhatsonchainProvider(bsv.Networks.testnet);
 
-      let info = await Utils.loadTransformInfo(
-        `${process.env.PUBLIC_URL}/${TicTacToe.name}.transformer.json`
-      );
+    provider.on(ProviderEvent.NetworkChange, network => {
+      Utils.setNetwork(network);
+    })
 
-      TicTacToe.init(info, artifact);
+    const signer = new SensiletSigner(provider);
 
-      return new TicTacToe(
-        PubKey(alicePubKey),
-        PubKey(bobPubKey),
-        true,
-        [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n]
-      ).markAsGenesis();
-    }
+    signerRef.current = signer;
 
-    fetchContract(PlayerPublicKey.get(Player.Alice), PlayerPublicKey.get(Player.Bob))
-      .then(async instance => {
-        console.log('instance', instance)
+    const gameState = GameData.get();
 
-        const sensiletProvider = new SensiletProvider();
+    signer.isSensiletConnected().then(isConnected => {
+      if (isConnected) {
+        signer.connect(provider);
+        initTicTacToe(signer).then(async instance => {
 
-        const isConnected = await sensiletProvider.getSigner().isConnected();
-
-        if(isConnected) {
-
-          const sensiletProvider = new SensiletProvider();
-
-          sensiletProvider.on(ProviderEvent.Connected, async (provider) => {
-            const network = await provider.getNetwork();
-            Utils.setNetwork(network.name === 'testnet');
-          })
-
-          await sensiletProvider.connect();
-
-          const gameState = GameData.get();
-  
+          instanceRef.current = instance;
           updateStates(Object.assign({}, states, {
-            gameStatus:  Object.keys(gameState).length > 0 ? gameState.status : GameStatus.wait,
-            isConnected: isConnected,
-            instance: instance
+            gameStatus: Object.keys(gameState).length > 0 ? gameState.status : GameStatus.wait,
+            isConnected: isConnected
           }))
 
-          
-        } else {
-          updateStates({
-            gameStatus: GameStatus.wait,
-            isConnected: isConnected,
-            instance: instance
-          })
-        }
-      })
-      .catch(e => {
-        console.error('fetchContract fails', e);
-      })
+        }).catch(async e => {
+          const isConnected = await signer.isConnected();
 
+          updateStates(Object.assign({}, states, {
+            gameStatus: Object.keys(gameState).length > 0 ? gameState.status : GameStatus.wait,
+            isConnected: isConnected
+          }))
+          console.error('fetchContract fails', e);
+        })
+
+      } else {
+        updateStates({
+          gameStatus: GameStatus.wait,
+          isConnected: isConnected
+        })
+      }
+    })
   }, []);
 
   const startGame = async (amount) => {
 
-    if (states.instance) {
 
-
+    if (instanceRef.current !== null) {
       try {
 
-        const provider = new SensiletProvider();
-
-        await states.instance.connect(provider);
-        const deployTx = await states.instance.deploy(amount);
+        const deployTx = await instanceRef.current.deploy(amount);
 
         let gameStates = {
           amount: amount,
@@ -120,11 +137,13 @@ function App() {
           gameStatus: GameStatus.progress
         }))
       } catch (error) {
+        console.error('deployed failed:', error)
         alert("deployed failed:" + error.message)
       }
 
-
     }
+
+
   };
 
   const cancelGame = async () => {
@@ -132,18 +151,18 @@ function App() {
     ContractUtxos.clear();
     CurrentPlayer.set(Player.Alice);
 
-    if (states.instance) {
+    if (instanceRef.current) {
       // reset states
-      states.instance.is_alice_turn = true;
-      states.instance.board = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      instanceRef.current.markAsGenesis()
+      instanceRef.current.is_alice_turn = true;
+      instanceRef.current.board = [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     }
 
-    ref.current.clean();
+    gameRef.current.clean();
 
     updateStates({
       gameStatus: GameStatus.wait,
-      isConnected: states.isConnected,
-      instance: states.instance
+      isConnected: states.isConnected
     })
 
   };
@@ -162,9 +181,7 @@ function App() {
   };
 
   const updateContractInstance = async (instance) => {
-    updateStates(Object.assign({}, states, {
-      instance: instance
-    }))
+    instanceRef.current = instance;
   };
 
   return (
@@ -175,9 +192,10 @@ function App() {
           onStart={startGame}
           onCancel={cancelGame}
           gameStatus={states.gameStatus}
+          signer={signerRef.current}
         />
-        <Game ref={ref} contractInstance={states.instance} updateGameStatus={updateGameStatus} updateContractInstance={updateContractInstance} />
-        {states.isConnected ? <Balance></Balance> : <Auth></Auth>}
+        <Game ref={gameRef} contractInstance={instanceRef.current} updateGameStatus={updateGameStatus} updateContractInstance={updateContractInstance} />
+        {states.isConnected ? <Balance signer={signerRef.current}></Balance> : <Auth signer={signerRef.current}></Auth>}
       </header>
       <Footer />
     </div>

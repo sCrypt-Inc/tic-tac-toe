@@ -1,6 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { SensiletProvider, SensiletSigner } from 'scrypt-ts';
+import React, { useRef } from 'react';
 
 export const GameStatus = {
     "wait":1,
@@ -16,23 +15,23 @@ function TitleBar(props) {
 
         let amount = parseInt(amountRef.current.value);
 
-        if (amount < 90000) {
-            alert("invalid amount, at least 90000 satoshis")
+        if (amount < 30000) {
+            alert("invalid amount, at least 30000 satoshis")
             return;
         }
 
         if (!isNaN(amount)) {
-            const provider = new SensiletProvider();
-            const signer = provider.getSigner();
-            const isConnected = await signer.isConnected()
+            const isConnected = await props.signer.isSensiletConnected()
             if(isConnected) {
-                const balance = await signer.getBalance();
+                const balance = await props.signer.getBalance();
 
                 if (amount > balance.confirmed + balance.unconfirmed) {
                     alert("Not enough funds. Please fund your wallet address first");
                     return;
                 }
                 props.onStart(amount);
+            } else {
+                alert("Please connect sensilet wallet first!");
             }
 
    
@@ -64,7 +63,7 @@ function TitleBar(props) {
         return (
             <div>
                 <label>Bet amount:
-                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={90000} placeholder="in satoshis" />
+                    <input ref={amountRef} type="number" name="amount" min="1" defaultValue={30000} placeholder="in satoshis" />
                 </label>
                 <button className="start" onClick={onStart}>Start</button>
             </div>

@@ -1,14 +1,14 @@
 import React from 'react';
-import { bsv, SensiletProvider, ProviderEvent } from 'scrypt-ts';
+import { bsv, Sig } from 'scrypt-ts';
 import Board from './Board';
-import { GameData, PlayerAddress, PlayerPrivkey, Player, CurrentPlayer, ContractUtxos } from './storage';
+import { GameData, Player, CurrentPlayer, ContractUtxos } from './storage';
 import { GameStatus } from './TitleBar';
 import { Utils } from './utils';
 
 
 
 // Convert react state to contract state
-const toContractState = (state) => {
+export const toContractState = (state) => {
   const history = state.history.slice(0, state.currentStepNumber + 1);
   const current = history[history.length - 1];
   const squares = current.squares.slice();
@@ -18,11 +18,11 @@ const toContractState = (state) => {
       is_alice_turn: state.is_alice_turn,
       board: squares.map(square => {
         if (square && square.label === 'X') {
-          return 1;
+          return 1n;
         } else if (square && square.label === 'O') {
-          return 2
+          return 2n
         } else {
-          return 0;
+          return 0n;
         }
       })
     }
@@ -164,132 +164,141 @@ class Game extends React.Component {
     // update states
     this.setState(gameState);
 
-    const tx = new bsv.Transaction()
-      .addInput(new bsv.Transaction.Input({
-        prevTxId: contractUtxo.txId,
-        outputIndex: contractUtxo.outputIndex,
-        script: new bsv.Script(""), // placeholder
-        output: new bsv.Transaction.Output({
-          script: bsv.Script.fromHex(contractUtxo.script),
-          satoshis: contractUtxo.satoshis,
-        })
-      }))
+    try {
+      const tx = new bsv.Transaction()
+        .addInput(new bsv.Transaction.Input({
+          prevTxId: contractUtxo.txId,
+          outputIndex: contractUtxo.outputIndex,
+          script: new bsv.Script(""), // placeholder
+          output: new bsv.Transaction.Output({
+            script: bsv.Script.fromHex(contractUtxo.script),
+            satoshis: contractUtxo.satoshis,
+          })
+        }))
 
-    const inputIndex = 0;
-    const newInstance = this.props.contractInstance.next();
+      const inputIndex = 0;
+      const newInstance = this.props.contractInstance.next();
 
-    if (winner) { // Current Player won
-      let address = PlayerAddress.get(CurrentPlayer.get());
+      const signer = this.props.contractInstance.signer;
 
-      tx.setOutput(0, (tx) => {
-        return new bsv.Transaction.Output({
-          script: bsv.Script.buildPublicKeyHashOut(address),
-          satoshis: contractUtxo.satoshis - tx.getEstimateFee(),
-        })
-      })
+      if (winner) { // Current Player won
+        const address = await signer.getDefaultAddress();
 
-    } else if (history.length >= 9) { //board is full
-      const amount = Math.ceil((contractUtxo.satoshis - tx.getEstimateFee()) / 2)
-      tx.setOutput(0, (tx) => {
-        return new bsv.Transaction.Output({
-          script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Alice)),
-          satoshis: amount,
-        })
-      })
-        .setOutput(1, (tx) => {
+        tx.setOutput(0, (tx) => {
           return new bsv.Transaction.Output({
-            script: bsv.Script.buildPublicKeyHashOut(PlayerAddress.get(Player.Bob)),
+            script: bsv.Script.buildPublicKeyHashOut(address),
+            satoshis: contractUtxo.satoshis - tx.getEstimateFee(),
+          })
+        })
+
+      } else if (history.length >= 9) { //board is full
+        const amount = Math.ceil((contractUtxo.satoshis - tx.getEstimateFee()) / 2)
+
+        const address = await signer.getDefaultAddress();
+
+        tx.setOutput(0, (tx) => {
+          return new bsv.Transaction.Output({
+            script: bsv.Script.buildPublicKeyHashOut(address),
             satoshis: amount,
           })
         })
+          .setOutput(1, (tx) => {
+            return new bsv.Transaction.Output({
+              script: bsv.Script.buildPublicKeyHashOut(address),
+              satoshis: amount,
+            })
+          })
 
-    } else { //continue move
+      } else { //continue move
 
-      const newStates = toContractState(gameState);
+        const newStates = toContractState(gameState);
 
-      Object.assign(newInstance, newStates);
+        Object.assign(newInstance, newStates);
 
-      tx.setOutput(0, (tx) => {
-        const amount = contractUtxo.satoshis - tx.getEstimateFee();
+        tx.setOutput(0, (tx) => {
+          const amount = contractUtxo.satoshis - tx.getEstimateFee();
 
-        return new bsv.Transaction.Output({
-          script: newInstance.lockingScript,
-          satoshis: amount,
+          return new bsv.Transaction.Output({
+            script: newInstance.lockingScript,
+            satoshis: amount,
+          })
         })
-      })
-    }
-
-    const privateKey = new bsv.PrivateKey.fromWIF(PlayerPrivkey.get(CurrentPlayer.get()));
-    tx.setInputScript({ inputIndex, privateKey }, (tx, output) => {
-      const sig = tx.getSignature(inputIndex);
-
-      let amount = tx.getOutputAmount(0);
-
-      if (amount < 1) {
-        alert('Not enough funds.');
-        throw new Error('Not enough funds.')
       }
 
-      // we can verify locally before we broadcast the tx, if fail, 
-      // it will print the launch.json in the brower webview developer tool, just copy/paste,
-      // and try launch the sCrypt debugger
-      // const result = this.props.contractInstance.move(i, sig, amount, preimage).verify({
-      //   inputSatoshis: output.satoshis, tx
-      // })
 
-      return this.props.contractInstance.getUnlockingScript((cloned) => {
-        // call previous counter's public method to get the unlocking script.
-        cloned.unlockFrom = { tx, inputIndex }
-        cloned.move(i, sig, amount)
-      })
-    })
-      .seal()
+      await tx.setInputScriptAsync({ inputIndex }, async (tx, output) => {
 
-      const sensiletProvider = new SensiletProvider();
+        const signer = this.props.contractInstance.signer;
 
-      sensiletProvider.on(ProviderEvent.Connected, (provider) => {
+        const address = await signer.getDefaultAddress();
+
+        const sigResponses = await signer.getSignatures(
+          tx.toString(),
+          [
+            {
+              inputIndex,
+              satoshis: contractUtxo.satoshis,
+              scriptHex: contractUtxo.script,
+              address: [address],
+            }
+          ]
+        );
+
+        const sigs = sigResponses.map(sigResp => `${sigResp.sig}${sigResp.sigHashType.toString(16)}`);
+
+        let amount = tx.getOutputAmount(0);
+
+        if (amount < 1) {
+          alert('Not enough funds.');
+          throw new Error('Not enough funds.')
+        }
 
 
-        provider.sendTransaction(tx).then(() => {
+        this.props.contractInstance.unlockFrom = { tx, inputIndex }
 
-          const utxo = ContractUtxos.add(tx.toString());
-  
-          this.props.updateContractInstance(newInstance);
-    
-          squares[i].tx = utxo.utxo.txId;
-          squares[i].n = history.length;
-    
-          if (!winner) {
-            CurrentPlayer.set(this.state.is_alice_turn ? Player.Alice : Player.Bob);
-          }
-    
-    
-          // update states
-          const newGameState = Object.assign({}, this.state, {
-            history: history.concat([
-              {
-                squares,
-                currentLocation: getLocation(i),
-                stepNumber: history.length,
-              },
-            ])
-          })
-          this.setState(newGameState)
-          GameData.update(newGameState)
-          this.props.updateGameStatus();
-          this.attachState();
-    
-  
+        return this.props.contractInstance.getUnlockingScript((cloned) => {
+          // call previous counter's public method to get the unlocking script.
+          cloned.move(i, Sig(sigs[0]), amount)
         })
-        .catch(e => {
-          console.error("sendTransaction error:", e)
-          this.setState(backupState)
-        })
-   
       })
 
-      sensiletProvider.connect()
-      
+      await tx.sealAsync()
+
+      const sensiletProvider = this.props.contractInstance.provider;
+
+      await sensiletProvider.sendTransaction(tx);
+
+
+      const utxo = ContractUtxos.add(tx.toString());
+
+      this.props.updateContractInstance(newInstance);
+
+      squares[i].tx = utxo.utxo.txId;
+      squares[i].n = history.length;
+
+      if (!winner) {
+        CurrentPlayer.set(this.state.is_alice_turn ? Player.Alice : Player.Bob);
+      }
+
+
+      // update states
+      const newGameState = Object.assign({}, this.state, {
+        history: history.concat([
+          {
+            squares,
+            currentLocation: getLocation(i),
+            stepNumber: history.length,
+          },
+        ])
+      })
+      this.setState(newGameState)
+      GameData.update(newGameState)
+      this.props.updateGameStatus();
+      this.attachState();
+    } catch (error) {
+      console.error("error:", error)
+      this.setState(backupState)
+    }
 
   }
 

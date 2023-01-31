@@ -1,32 +1,27 @@
 import { useState, useEffect } from "react";
-import { SensiletProvider, ProviderEvent } from "scrypt-ts";
 
 const Balance = (props) => {
   const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState("");
   const [network, setNetwork] = useState("");
   useEffect(() => {
-    const  sensiletProvider = new SensiletProvider();
 
-    sensiletProvider.on(ProviderEvent.Connected, (provider) => {
-
-      provider.getSigner().getBalance().then(balance => setBalance(balance.total));
-
-      provider.getSigner().getDefaultAddress().then(address => {
+    if(props.signer) {
+      props.signer.getBalance().then(balance => setBalance(balance.total));
+  
+      props.signer.getDefaultAddress().then(address => {
         setAddress(address.toString())
       })
   
-      provider.getNetwork().then(network => {
+      props.signer.connectedProvider.getNetwork().then(network => {
         if(network.name === 'testnet') {
           setNetwork('Testnet')
         } else {
           setNetwork('Mainnet')
         }
-      });
-    })
-
-    sensiletProvider.connect()
-
+      }); 
+    }
+    
   }, []);
 
     return (

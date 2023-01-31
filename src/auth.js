@@ -1,15 +1,15 @@
-import { SensiletProvider } from "scrypt-ts";
-
 const Auth = (props) => {
 
   const sensiletLogin = async (e) => {
     try {
 
-      const provider = new SensiletProvider();
-      await provider.connect();
-      window.location.reload();
+      if(props.signer) {
+        await props.signer.getConnectedTarget();
+        window.location.reload();
+      }
+
     } catch (error) {
-      console.error(error);
+      console.error("sensiletLogin failed", error);
     }
   };
 
@@ -20,7 +20,7 @@ const Auth = (props) => {
           className="pure-button button-large sensilet"
           onClick={sensiletLogin}
         >
-          Sensilet
+          Connect Sensilet
         </button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { toHex, bsv } from "scrypt-ts";
+import { bsv } from "scrypt-ts";
 
 
 export const Player = {
@@ -16,24 +16,7 @@ export const PlayerPrivkey = {
   },
 };
 
-// store alice and bob's PublicKey, readonly
-export const PlayerPublicKey = {
-  get: (player) => {
-    const key = PlayerPrivkey.get(player);
-    const privateKey = new bsv.PrivateKey.fromWIF(key);
-    const publicKey = bsv.PublicKey.fromPrivateKey(privateKey);
-    return toHex(publicKey);
-  }
-};
 
-// store alice and bob's PublicKey Address, readonly
-export const PlayerAddress = {
-  get: (player) => {
-    const key = PlayerPrivkey.get(player);
-    const privateKey = new bsv.PrivateKey.fromWIF(key);
-    return privateKey.toAddress().toString();
-  }
-};
 
 // store current player
 export const CurrentPlayer = {
@@ -45,23 +28,6 @@ export const CurrentPlayer = {
   },
 };
 
-// Randomly generated alice and bob privateKey
-export const initPlayer = () => {
-
-  const alice = PlayerPrivkey.get(Player.Alice);
-
-  if(!alice) {
-    const aliceKey = new bsv.PrivateKey.fromRandom();
-    PlayerPrivkey.set(Player.Alice, aliceKey.toWIF())
-  }
-
-  const bob = PlayerPrivkey.get(Player.Bob);
-
-  if(!bob) {
-    const bobKey = new bsv.PrivateKey.fromRandom();
-    PlayerPrivkey.set(Player.Bob, bobKey.toWIF())
-  }
-}
 
 // store game data
 export const GameData = {
