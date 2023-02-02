@@ -10,21 +10,21 @@ export class TicTacToe extends SmartContract {
     is_alice_turn: boolean;
 
     @prop(true)
-    board: FixedArray<bigint, 9>;
+    board: FixedArray<bigint, typeof TicTacToe.BOARDLEN>;
 
 
-    static readonly TURNLEN : bigint = 1n;
+    static readonly BOARDLEN = 9;
 
-    static readonly BOARDLEN: bigint = 9n;
-
+    @prop()
     static readonly EMPTY: bigint = 0n;
 
-    static readonly ALICE: bigint = 1n;
-
+    @prop()
+    static readonly ALICE: bigint = 1n + 0n;
+    @prop()
     static readonly BOB: bigint = 2n;
 
 
-    constructor(alice: PubKey, bob: PubKey, is_alice_turn:boolean, board: FixedArray<bigint, 9>) {
+    constructor(alice: PubKey, bob: PubKey, is_alice_turn:boolean, board: FixedArray<bigint, typeof TicTacToe.BOARDLEN>) {
         super(alice, bob, is_alice_turn, board);
         this.alice = alice;
         this.bob = bob;
@@ -69,15 +69,17 @@ export class TicTacToe extends SmartContract {
 
     @method()
     won(play: bigint ) : boolean {
-
-        let lines: FixedArray<FixedArray<BigInt, 3>, 8> = [[0n, 1n, 2n], [3n, 4n, 5n], [6n, 7n, 8n], [0n, 3n, 6n], [1n, 4n, 7n], [2n, 5n, 8n], [0n, 4n, 8n], [2n, 4n, 6n]];
+        
+        const N = 3;
+        const M = 8;
+        let lines: FixedArray<FixedArray<bigint, typeof N>, typeof M> = [[0n, 1n, 2n], [3n, 4n, 5n], [6n, 7n, 8n], [0n, 3n, 6n], [1n, 4n, 7n], [2n, 5n, 8n], [0n, 4n, 8n], [2n, 4n, 6n]];
 
         let anyLine = false;
 
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < M; i++) {
             let line = true;
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < N; j++) {
                 line = line && this.board[Number(lines[i][j])] === play;
             }
 
