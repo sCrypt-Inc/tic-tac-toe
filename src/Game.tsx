@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Board from './Board';
 import { GameData } from "./types";
+import { Utils } from "./utils";
 
 
 const calculateWinner = (squares: any) => {
@@ -127,6 +128,7 @@ function Game(props: any) {
         />
 
         <div className="game-bottom" >
+          {props.deployedTxId ? <div className="bet"><a href={Utils.getTxUri(props.deployedTxId)} target="_blank" rel="noreferrer" >Deploy transaction</a> </div> : undefined}
           {end}
         </div>
       </div>
