@@ -4,6 +4,13 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+import { TicTacToe } from './contracts/tictactoe';
+
+import artifact from '../artifact/src/contracts/tictactoe.json';
+
+TicTacToe.init(artifact);
+
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
