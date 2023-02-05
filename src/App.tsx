@@ -2,7 +2,8 @@ import "./App.css";
 import Game from "./Game";
 import React, { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
-import { WhatsonchainProvider, bsv, SensiletSigner } from "scrypt-ts";
+import { WhatsonchainProvider, bsv, SensiletSigner, PubKey, toHex } from "scrypt-ts";
+import { TicTacToe } from "./contracts/tictactoe";
 const initialGameData = {
   amount: 0,
   name: "tic-tac-toe",
@@ -23,6 +24,8 @@ function App() {
   const [isConnected, setConnected] = useState(false);
   const [balance, setBalance] = useState(0);
   const signerRef = useRef<SensiletSigner>();
+  const [contract, setContract] = useState<TicTacToe | undefined>(undefined)
+  const [deployedTxId, setDeployedTxId] = useState<string>("")
 
 
   const startGame = async (amount: number) => {
@@ -32,9 +35,32 @@ function App() {
       return
     }
 
-    setGameData(Object.assign({}, gameData, {
-      start: true
-    }))
+    try {
+      const signer = signerRef.current as SensiletSigner;
+
+      const pubkey = await signer.getDefaultPubKey()
+  
+      const instance = new TicTacToe(
+        PubKey(toHex(pubkey)),
+        PubKey(toHex(pubkey))
+      ).markAsGenesis();
+    
+      await instance.connect(signer);
+  
+      const tx = await instance.deploy(amount);
+
+      setDeployedTxId(tx.id)
+  
+      setContract(instance)
+  
+      setGameData(Object.assign({}, gameData, {
+        start: true
+      }))
+    } catch(e) {
+      console.error('deploy TicTacToe failes', e)
+      alert('deploy TicTacToe failes')
+    }
+    
   };
 
   const cancelGame = async () => {
@@ -70,7 +96,7 @@ function App() {
           onCancel={cancelGame}
           started={gameData.start}
         />
-        <Game gameData={gameData} setGameData={setGameData} />
+        <Game gameData={gameData} setGameData={setGameData} deployedTxId={deployedTxId} />
 
         {
           isConnected ?
