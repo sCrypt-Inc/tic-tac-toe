@@ -1,0 +1,255 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.board-row {
+  padding: 0 0;
+  margin: 0 0;
+}
+
+.status {
+  margin-bottom: 10px;
+}
+
+.square {
+  background: #fff;
+  border: 1px solid #999;
+  float: left;
+
+  line-height: 6rem;
+  height: 6em;
+  margin-right: -1px;
+  margin-top: -1px;
+  padding: 0;
+  text-align: center;
+  width: 6em;
+}
+
+.square a {
+  color: black;
+  text-decoration: none;
+  font-size: 6rem;
+  font-weight: bold;
+}
+
+.square--green {
+  background: green;
+}
+
+.square:focus {
+  outline: none;
+}
+
+.kbd-navigation .square:focus {
+  background: #ddd;
+}
+
+.game {
+  display: flex;
+  flex-direction: row;
+}
+
+.game-status {
+  margin: 1em 1em;
+}
+
+.wallet .auth {
+  display: flex;
+  flex-direction: row;
+  margin-top: 20px;
+}
+
+.sensilet {
+
+}
+
+.wallet label {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.walletqrcode {
+  width: fit-content;
+  height: fit-content;
+}
+
+.walletInfo {
+  width: fit-content;
+  height: fit-content;
+  text-align: left;
+}
+
+a {
+  color: #4caf50;
+  font-size: medium;
+}
+
+.game-info {
+  margin-left: 0px;
+}
+
+.button {
+  background-color: #555555; /* Green */
+  border: none;
+  color: #fff;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.button--green {
+  background-color: #4caf50;
+  color: #000;
+  font-weight: bold;
+}
+
+.button--new-game {
+  background-color: #bb3219;
+  color: #000;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+.wallet {
+  color: #fff;
+}
+
+.wallet .amountButton {
+  min-width: 120px;
+}
+
+.game-bottom {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-title {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.bet {
+  width: fit-content;
+}
+
+.bet a {
+  width: fit-content;
+  font-size: calc(10px + 2vmin);
+}
+
+.end {
+  margin-left: 10px;
+}
+
+.end a {
+  width: fit-content;
+  font-size: calc(10px + 2vmin);
+}
+
+.cancel {
+  margin-left: 10px;
+}
+
+.squarewapper {
+  display: inline-block;
+  position: relative;
+  margin: 0 0;
+}
+
+.squareicon {
+  position: absolute;
+  right: 10px;
+  bottom: 0px;
+  font-size: smaller;
+  color: #4caf50;
+}
+
+.bob {
+  padding-top: 1em;
+  text-align: center;
+  line-height: 50px;
+}
+
+.bob img {
+  width: 50px;
+  height: 50px;
+}
+
+.alice {
+  padding-top: 1em;
+  text-align: center;
+  line-height: 50px;
+}
+
+.alice img {
+  width: 50px;
+  height: 50px;
+}
+
+.warnning {
+  color: yellow;
+}
+
+.withdraw {
+  margin-bottom: 100px;
+  margin-top: 20px;
+}
+
+.withdraw button {
+ width: fit-content;
+ height: 35px;
+ text-align: unset;
+ vertical-align:0px;
+ margin: 15px 10px;
+ font-size: medium;
+}
+
+.withdraw input {
+  width: 350px;
+  height: 35px;
+  line-height: 35px;
+  vertical-align:0px;
+  margin: 0 0;
+  font-size: medium;
+  padding: 0 5px;
+ }
