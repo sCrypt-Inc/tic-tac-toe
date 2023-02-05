@@ -1,8 +1,8 @@
 import "./App.css";
 import Game from "./Game";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TitleBar from "./TitleBar";
-
+import { WhatsonchainProvider, bsv, SensiletSigner } from "scrypt-ts";
 const initialGameData = {
   amount: 0,
   name: "tic-tac-toe",
@@ -20,8 +20,18 @@ const initialGameData = {
 function App() {
 
   const [gameData, setGameData] = useState(initialGameData);
+  const [isConnected, setConnected] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const signerRef = useRef<SensiletSigner>();
+
 
   const startGame = async (amount: number) => {
+
+    if (!isConnected) {
+      alert("Peleas connect wallet first.")
+      return
+    }
+
     setGameData(Object.assign({}, gameData, {
       start: true
     }))
@@ -30,6 +40,26 @@ function App() {
   const cancelGame = async () => {
     setGameData(Object.assign({}, gameData, initialGameData))
   };
+
+  const sensiletLogin = async () => {
+    try {
+      const provider = new WhatsonchainProvider(bsv.Networks.testnet);
+      const signer = new SensiletSigner(provider);
+
+      signerRef.current = signer;
+      await signer.getConnectedTarget();
+      setConnected(true);
+
+
+      signer.getBalance().then(balance => {
+        setBalance(balance.confirmed + balance.unconfirmed)
+      })
+    } catch (error) {
+      console.error("sensiletLogin failed", error);
+      alert("sensiletLogin failed")
+    }
+  };
+
 
   return (
     <div className="App">
@@ -40,8 +70,19 @@ function App() {
           onCancel={cancelGame}
           started={gameData.start}
         />
-        <Game gameData={gameData} setGameData={setGameData}/>
+        <Game gameData={gameData} setGameData={setGameData} />
 
+        {
+          isConnected ?
+            <label>Balance: {balance} <span> (satoshis)</span></label>
+            :
+            <button
+              className="pure-button button-large sensilet"
+              onClick={sensiletLogin}
+            >
+              Connect Wallet
+            </button>
+        }
       </header>
     </div>
   );
