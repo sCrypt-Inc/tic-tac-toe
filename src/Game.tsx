@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Board from './Board';
+import { GameData } from "./types";
 
 
 const calculateWinner = (squares: any) => {
@@ -28,10 +29,10 @@ const calculateWinner = (squares: any) => {
 
 function Game(props: any) {
 
-  const gameData = props.gameData;
+  const gameData = props.gameData as GameData;
   const setGameData = props.setGameData;
   function canMove(i: number, squares: any) {
-    if(!gameData.start) {
+    if (!gameData.start) {
       alert("Pelease start the game!");
       return;
     }
@@ -54,15 +55,17 @@ function Game(props: any) {
       return;
     }
 
-    squares[i] = { label: gameData.isAliceTurn ? 'X' : 'O' };
-    squares[i].n = history.length;
+    squares[i] = {
+      label: gameData.isAliceTurn ? 'X' : 'O',
+      n: history.length
+    };
+
     let winner = calculateWinner(squares).winner;
- 
+
     const gameData_ = {
       history: history.concat([
         {
-          squares,
-          stepNumber: history.length,
+          squares
         },
       ]),
       isAliceTurn: winner ? gameData.isAliceTurn : !gameData.isAliceTurn,
@@ -91,9 +94,9 @@ function Game(props: any) {
 
 
   if (!gameData.isAliceTurn) {
-    icon = <div className="bob" > Bob <img src="/tic-tac-toe/bob.png" alt=""/></div>
+    icon = <div className="bob" > Bob <img src="/tic-tac-toe/bob.png" alt="" /></div>
   } else {
-    icon = <div className="alice" > Alice <img src="/tic-tac-toe/alice.jpg" alt=""/></div>
+    icon = <div className="alice" > Alice <img src="/tic-tac-toe/alice.jpg" alt="" /></div>
   }
 
   if (winner) {

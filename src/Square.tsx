@@ -1,20 +1,20 @@
+import { SquareData } from "./types";
 
-const Square = (props : any) => {
+const Square = (props: any) => {
 
+  const squaredata = props.value as SquareData | null;
 
-
-  let tx = props.value ? `https://test.whatsonchain.com/tx/${props.value.tx}` : "";
-  let icon = props.value ? <div className='squareicon'>{props.value.n}</div> : "";
+  let tx = squaredata?.tx ? `https://test.whatsonchain.com/tx/${props.value.tx}` : "";
   return (
     <div className="squarewapper">
       <button className={`${props.winnerClass} square`} onClick={props.onClick}>
-        {props.value ? <a href={tx} target="_blank" title="Click to see the transaction">{props.value.label}</a> : props.value}
+        {squaredata ? <a href={tx} target="_blank" title="Click to see the transaction" rel="noreferrer">{squaredata.label}</a> : undefined}
       </button>
-      {icon}
+      {
+        squaredata ? <div className='squareicon'>{squaredata.n}</div> : undefined
+      }
     </div>
-
   )
-
 }
 
 export default Square;
