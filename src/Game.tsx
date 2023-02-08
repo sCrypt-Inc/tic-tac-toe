@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Board from './Board';
-import { GameData } from "./types";
+import { TicTacToe } from "./contracts/tictactoe";
+import { GameData, SquareData } from "./types";
 import { Utils } from "./utils";
-
+import { bsv, BuildMethodCallTxOptions, BuildMethodCallTxResult, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig,MethodCallOptions } from 'scrypt-ts';
 
 const calculateWinner = (squares: any) => {
   const lines = [
@@ -32,6 +33,9 @@ function Game(props: any) {
 
   const gameData = props.gameData as GameData;
   const setGameData = props.setGameData;
+
+  const [lastTxId, setLastTxId] = useState<string>("")
+
   function canMove(i: number, squares: any) {
     if (!gameData.start) {
       alert("Pelease start the game!");
@@ -43,6 +47,96 @@ function Game(props: any) {
     }
 
     return true;
+  }
+
+  async function move(i: number, latestGameData: GameData) {
+    const current = props.contract as TicTacToe;
+    const nextInstance = current.next();
+
+    const initBalance = current.from?.tx.outputs[current.from?.outputIndex].satoshis as number;
+
+    // update nextInstance state
+    Object.assign(nextInstance, Utils.toContractState(latestGameData));
+
+    TicTacToe.bindTxBuilder('move', async (options: BuildMethodCallTxOptions<SmartContract>, n: bigint, sig: Sig) => {
+    
+      let play = current.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
+
+
+      const changeAddress = await current.signer.getDefaultAddress();
+
+      const unsignedTx: bsv.Transaction = new bsv.Transaction()
+        .addInputFromPrevTx(current.from?.tx as bsv.Transaction, current.from?.outputIndex)
+        .from(options.utxos);
+
+      if (nextInstance.won(play)) {
+
+        unsignedTx.addOutput(new bsv.Transaction.Output({
+          script: current.is_alice_turn ? buildPublicKeyHashScript(hash160(current.alice)) : buildPublicKeyHashScript(hash160(current.bob)),
+          satoshis: initBalance
+        }))
+        .change(changeAddress)
+
+        return Promise.resolve({
+          unsignedTx,
+          atInputIndex: 0,
+          nexts: [
+
+          ]
+        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+
+      } else if (nextInstance.full()) {
+
+        const halfAmount = initBalance / 2
+
+        unsignedTx.addOutput(new bsv.Transaction.Output({
+          script: buildPublicKeyHashScript(hash160(current.alice)),
+          satoshis: halfAmount
+        }))
+        .addOutput(new bsv.Transaction.Output({
+          script: buildPublicKeyHashScript(hash160(current.bob)),
+          satoshis: halfAmount
+        }))
+        .change(changeAddress)
+
+
+        return Promise.resolve({
+          unsignedTx,
+          atInputIndex: 0,
+          nexts: [
+
+          ]
+        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+      } else {
+
+        unsignedTx.addOutput(new bsv.Transaction.Output({
+          script: nextInstance.lockingScript,
+          satoshis: initBalance,
+        }))
+        .change(changeAddress)
+
+        return Promise.resolve({
+          unsignedTx,
+          atInputIndex: 0,
+          nexts: [
+            {
+              instance: nextInstance,
+              atOutputIndex: 0,
+              balance: initBalance
+            }
+          ]
+        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+      }
+    });
+    const pubKey = current.is_alice_turn ? current.alice : current.bob;
+    return current.methods.move(
+      BigInt(i),
+      (sigResponses: SignatureResponse[]) => {
+        return findSig(sigResponses, bsv.PublicKey.fromString(pubKey))
+      },
+      {
+        pubKeyOrAddrToSign: bsv.PublicKey.fromString(pubKey),
+      } as MethodCallOptions<TicTacToe>)
   }
 
   async function handleClick(i: number) {
@@ -64,6 +158,7 @@ function Game(props: any) {
     let winner = calculateWinner(squares).winner;
 
     const gameData_ = {
+      ...gameData,
       history: history.concat([
         {
           squares
@@ -74,8 +169,21 @@ function Game(props: any) {
       start: true
     }
 
+    const {tx, nexts} = await move(i, gameData_);
+
+    if(nexts && nexts[0]) {
+      props.setContract(nexts[0].instance)
+    }
+
+    const square = squares[i] as SquareData;
+    if(square) {
+      square.tx = tx.id;
+    }
+
+    console.log('move txid:', tx.id)
     // update states
     setGameData(gameData_)
+    setLastTxId(tx.id)
   }
 
 
@@ -89,7 +197,6 @@ function Game(props: any) {
 
 
   let status;
-  let end;
 
   let icon;
 
@@ -129,7 +236,7 @@ function Game(props: any) {
 
         <div className="game-bottom" >
           {props.deployedTxId ? <div className="bet"><a href={Utils.getTxUri(props.deployedTxId)} target="_blank" rel="noreferrer" >Deploy transaction</a> </div> : undefined}
-          {end}
+          {winner || history.length === 10 ? <div className="end"><a href={Utils.getTxUri(lastTxId)} target="_blank" rel="noreferrer" >Withdraw transaction</a> </div> : undefined }
         </div>
       </div>
     </div>);
