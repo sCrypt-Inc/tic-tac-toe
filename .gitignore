@@ -23,5 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 /out
+/artifact
+scrypt.index.json
 
 .vscode
