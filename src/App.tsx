@@ -96,7 +96,7 @@ function App() {
           onCancel={cancelGame}
           started={gameData.start}
         />
-        <Game gameData={gameData} setGameData={setGameData} deployedTxId={deployedTxId} />
+        <Game gameData={gameData} setGameData={setGameData} deployedTxId={deployedTxId} contract={contract} setContract={setContract}/>
 
         {
           isConnected ?
