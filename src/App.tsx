@@ -22,45 +22,50 @@ function App() {
 
   const [gameData, setGameData] = useState(initialGameData);
   const [isConnected, setConnected] = useState(false);
-  const [balance, setBalance] = useState(0);
+
   const signerRef = useRef<SensiletSigner>();
   const [contract, setContract] = useState<TicTacToe | undefined>(undefined)
   const [deployedTxId, setDeployedTxId] = useState<string>("")
-
+  const [alicePubkey, setAlicePubkey] = useState("");
+  const [bobPubkey, setBobPubkey] = useState("");
+  const [alicebalance, setAliceBalance] = useState(0);
+  const [bobbalance, setBobBalance] = useState(0);
 
   const startGame = async (amount: number) => {
 
-    if (!isConnected) {
+    if (!isConnected || !alicePubkey || !bobPubkey) {
+      setConnected(false)
       alert("Peleas connect wallet first.")
       return
     }
 
+
+
     try {
       const signer = signerRef.current as SensiletSigner;
 
-      const pubkey = await signer.getDefaultPubKey()
-  
+
       const instance = new TicTacToe(
-        PubKey(toHex(pubkey)),
-        PubKey(toHex(pubkey))
+        PubKey(toHex(alicePubkey)),
+        PubKey(toHex(bobPubkey))
       ).markAsGenesis();
-    
+
       await instance.connect(signer);
-  
+
       const tx = await instance.deploy(amount);
 
       setDeployedTxId(tx.id)
-  
+
       setContract(instance)
-  
+
       setGameData(Object.assign({}, gameData, {
         start: true
       }))
-    } catch(e) {
+    } catch (e) {
       console.error('deploy TicTacToe failes', e)
       alert('deploy TicTacToe failes')
     }
-    
+
   };
 
   const cancelGame = async () => {
@@ -73,13 +78,35 @@ function App() {
       const signer = new SensiletSigner(provider);
 
       signerRef.current = signer;
-      await signer.getConnectedTarget();
-      setConnected(true);
+      await signer.getConnectedTarget() as any;
 
+      const pubkey = await signer.getDefaultPubKey();
+      const changeAccountMessage = "Pelease change your account in Sensilet wallet, click again to get bob PublicKey";
 
-      signer.getBalance().then(balance => {
-        setBalance(balance.confirmed + balance.unconfirmed)
-      })
+      if (!alicePubkey) {
+
+        setAlicePubkey(toHex(pubkey))
+
+        signer.getBalance().then(balance => {
+          setAliceBalance(balance.confirmed + balance.unconfirmed)
+        })
+
+        alert(changeAccountMessage)
+
+      } else {
+        if (toHex(pubkey) !== alicePubkey) {
+          setBobPubkey(toHex(pubkey))
+
+          signer.getBalance().then(balance => {
+            setBobBalance(balance.confirmed + balance.unconfirmed)
+          })
+
+          setConnected(true);
+        } else {
+          alert(changeAccountMessage)
+        }
+      }
+
     } catch (error) {
       console.error("sensiletLogin failed", error);
       alert("sensiletLogin failed")
@@ -96,11 +123,21 @@ function App() {
           onCancel={cancelGame}
           started={gameData.start}
         />
-        <Game gameData={gameData} setGameData={setGameData} deployedTxId={deployedTxId} contract={contract} setContract={setContract}/>
+        <Game gameData={gameData} 
+        setGameData={setGameData} 
+        deployedTxId={deployedTxId} 
+        contract={contract} 
+        setContract={setContract}
+        alicePubkey={alicePubkey}
+        bobPubkey={bobPubkey} />
 
         {
           isConnected ?
-            <label>Balance: {balance} <span> (satoshis)</span></label>
+          <div>
+            <label>Alice Balance: {alicebalance} <span> (satoshis)</span></label>
+            <br/>
+            <label>Bob Balance: {bobbalance}  <span> (satoshis)</span></label>
+          </div>
             :
             <button
               className="pure-button button-large sensilet"
