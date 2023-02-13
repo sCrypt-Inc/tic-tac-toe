@@ -3,7 +3,7 @@ import Board from './Board';
 import { TicTacToe } from "./contracts/tictactoe";
 import { GameData, SquareData } from "./types";
 import { Utils } from "./utils";
-import { bsv, BuildMethodCallTxOptions, BuildMethodCallTxResult, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig,MethodCallOptions } from 'scrypt-ts';
+import { bsv, BuildMethodCallTxOptions, BuildMethodCallTxResult, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig, MethodCallOptions, toHex } from 'scrypt-ts';
 
 const calculateWinner = (squares: any) => {
   const lines = [
@@ -47,6 +47,16 @@ function Game(props: any) {
     }
 
     return true;
+  }
+
+  async function isRightSensiletAccount() {
+    const current = props.contract as TicTacToe;
+    
+    const expectedPubkey = current.is_alice_turn ? props.alicePubkey : props.bobPubkey;
+    
+    const pubkey = await current.signer.getDefaultPubKey();
+
+    return toHex(pubkey) === expectedPubkey;
   }
 
   async function move(i: number, latestGameData: GameData) {
@@ -144,6 +154,13 @@ function Game(props: any) {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
+
+    const isRightAccount = await isRightSensiletAccount();
+
+    if (!isRightAccount) {
+      alert(`Pelease switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
+      return;
+    }
 
     if (!canMove(i, squares)) {
       console.error('can not move now!')
