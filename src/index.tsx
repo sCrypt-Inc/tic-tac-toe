@@ -8,7 +8,7 @@ import { TicTacToe } from './contracts/tictactoe';
 
 import artifact from '../artifact/src/contracts/tictactoe.json';
 
-TicTacToe.init(artifact);
+TicTacToe.loadArtifact(artifact);
 
 
 const root = ReactDOM.createRoot(

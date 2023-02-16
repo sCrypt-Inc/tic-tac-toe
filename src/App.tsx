@@ -48,7 +48,7 @@ function App() {
       const instance = new TicTacToe(
         PubKey(toHex(alicePubkey)),
         PubKey(toHex(bobPubkey))
-      ).markAsGenesis();
+      )
 
       await instance.connect(signer);
 
