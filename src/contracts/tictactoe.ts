@@ -1,5 +1,6 @@
 import { prop, method, SmartContract, PubKey, FixedArray, assert, Sig, Utils, toByteString, hash160, 
-    hash256} from "scrypt-ts";
+    hash256,
+    fill} from "scrypt-ts";
 
 export class TicTacToe extends SmartContract {
     @prop()
@@ -25,7 +26,7 @@ export class TicTacToe extends SmartContract {
       this.alice = alice;
       this.bob = bob;
       this.is_alice_turn = true;
-      this.board = [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+      this.board = fill(0n, 9);
     }
 
     @method()
