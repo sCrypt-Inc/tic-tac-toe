@@ -1,6 +1,8 @@
-import { prop, method, SmartContract, PubKey, FixedArray, assert, Sig, Utils, toByteString, hash160, 
+import {
+    prop, method, SmartContract, PubKey, FixedArray, assert, Sig, Utils, toByteString, hash160,
     hash256,
-    fill} from "scrypt-ts";
+    fill
+} from "scrypt-ts";
 
 export class TicTacToe extends SmartContract {
     @prop()
@@ -22,11 +24,11 @@ export class TicTacToe extends SmartContract {
     static readonly BOB: bigint = 2n;
 
     constructor(alice: PubKey, bob: PubKey) {
-      super(...arguments)
-      this.alice = alice;
-      this.bob = bob;
-      this.is_alice_turn = true;
-      this.board = fill(0n, 9);
+        super(...arguments)
+        this.alice = alice;
+        this.bob = bob;
+        this.is_alice_turn = true;
+        this.board = fill(TicTacToe.EMPTY, 9);
     }
 
     @method()
@@ -58,7 +60,7 @@ export class TicTacToe extends SmartContract {
             outputs = this.buildStateOutput(this.ctx.utxo.value);
         }
 
-        if(this.changeAmount > 0n) {
+        if (this.changeAmount > 0n) {
             outputs += this.buildChangeOutput();
         }
         // make sure the transaction contains the expected outputs built above
@@ -66,7 +68,7 @@ export class TicTacToe extends SmartContract {
     }
 
     @method()
-    won(play: bigint) : boolean {
+    won(play: bigint): boolean {
         let lines: FixedArray<FixedArray<bigint, 3>, 8> = [
             [0n, 1n, 2n],
             [3n, 4n, 5n],
@@ -93,12 +95,12 @@ export class TicTacToe extends SmartContract {
     }
 
     @method()
-    full() : boolean {
+    full(): boolean {
         let full = true;
         for (let i = 0; i < 9; i++) {
             full = full && this.board[i] !== TicTacToe.EMPTY;
         }
         return full;
     }
-    
+
 }
