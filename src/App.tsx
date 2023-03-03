@@ -1,6 +1,6 @@
 import "./App.css";
 import Game from "./Game";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import TitleBar from "./TitleBar";
 import { WhatsonchainProvider, bsv, SensiletSigner, PubKey, toHex } from "scrypt-ts";
 import { TicTacToe } from "./contracts/tictactoe";

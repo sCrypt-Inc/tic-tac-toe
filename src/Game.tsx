@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import Board from './Board';
 import { TicTacToe } from "./contracts/tictactoe";
 import { GameData, SquareData } from "./types";
