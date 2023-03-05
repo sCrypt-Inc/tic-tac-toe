@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 
 import { TicTacToe } from './contracts/tictactoe';
 
-var artifact = require('../artifact/src/contracts/tictactoe.json');
+var artifact = require('../artifacts/src/contracts/tictactoe.json');
 
 TicTacToe.loadArtifact(artifact);
 
