@@ -12,6 +12,5 @@ os:
 
 
 script:
-  - npx scrypt-cli compile
   - CI='' npm run build
   - npm t -- --watchAll=false
