@@ -78,7 +78,11 @@ function App() {
       const signer = new SensiletSigner(provider);
 
       signerRef.current = signer;
-      await signer.getConnectedTarget() as any;
+
+      const { isAuthenticated, error } = await signer.requestAuth()
+      if (!isAuthenticated) {
+        throw new Error(error)
+      }
 
       const pubkey = await signer.getDefaultPubKey();
       const changeAccountMessage = "Please change your account in Sensilet wallet, click again to get bob PublicKey";
