@@ -35,7 +35,7 @@ function App() {
 
     if (!isConnected || !alicePubkey || !bobPubkey) {
       setConnected(false)
-      alert("Peleas connect wallet first.")
+      alert("Please connect wallet first.")
       return
     }
 
@@ -81,7 +81,7 @@ function App() {
       await signer.getConnectedTarget() as any;
 
       const pubkey = await signer.getDefaultPubKey();
-      const changeAccountMessage = "Pelease change your account in Sensilet wallet, click again to get bob PublicKey";
+      const changeAccountMessage = "Please change your account in Sensilet wallet, click again to get bob PublicKey";
 
       if (!alicePubkey) {
 

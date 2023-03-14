@@ -38,7 +38,7 @@ function Game(props: any) {
 
   function canMove(i: number, squares: any) {
     if (!gameData.start) {
-      alert("Pelease start the game!");
+      alert("Please start the game!");
       return;
     }
 
@@ -158,7 +158,7 @@ function Game(props: any) {
     const isRightAccount = await isRightSensiletAccount();
 
     if (!isRightAccount) {
-      alert(`Pelease switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
+      alert(`Please switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
       return;
     }
 
