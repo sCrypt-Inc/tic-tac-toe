@@ -2,7 +2,7 @@ import "./App.css";
 import Game from "./Game";
 import { useState, useRef } from "react";
 import TitleBar from "./TitleBar";
-import { WhatsonchainProvider, bsv, SensiletSigner, PubKey, toHex } from "scrypt-ts";
+import { DefaultProvider, SensiletSigner, PubKey, toHex } from "scrypt-ts";
 import { TicTacToe } from "./contracts/tictactoe";
 const initialGameData = {
   amount: 0,
@@ -74,7 +74,7 @@ function App() {
 
   const sensiletLogin = async () => {
     try {
-      const provider = new WhatsonchainProvider(bsv.Networks.testnet);
+      const provider = new DefaultProvider();
       const signer = new SensiletSigner(provider);
 
       signerRef.current = signer;
