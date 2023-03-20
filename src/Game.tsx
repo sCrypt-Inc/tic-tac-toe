@@ -3,7 +3,7 @@ import Board from './Board';
 import { TicTacToe } from "./contracts/tictactoe";
 import { GameData, SquareData } from "./types";
 import { Utils } from "./utils";
-import { bsv, BuildMethodCallTxOptions, BuildMethodCallTxResult, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig, MethodCallOptions, toHex } from 'scrypt-ts';
+import { bsv, ContractTransaction, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig, MethodCallOptions, toHex } from 'scrypt-ts';
 
 const calculateWinner = (squares: any) => {
   const lines = [
@@ -68,7 +68,7 @@ function Game(props: any) {
     // update nextInstance state
     Object.assign(nextInstance, Utils.toContractState(latestGameData));
 
-    TicTacToe.bindTxBuilder('move', async (options: BuildMethodCallTxOptions<SmartContract>, n: bigint, sig: Sig) => {
+    current.bindTxBuilder('move', async (current: TicTacToe, options: MethodCallOptions<SmartContract>, n: bigint, sig: Sig) => {
     
       let play = current.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
 
@@ -77,7 +77,6 @@ function Game(props: any) {
 
       const unsignedTx: bsv.Transaction = new bsv.Transaction()
         .addInputFromPrevTx(current.from?.tx as bsv.Transaction, current.from?.outputIndex)
-        .from(options.utxos);
 
       if (nextInstance.won(play)) {
 
@@ -88,12 +87,12 @@ function Game(props: any) {
         .change(changeAddress)
 
         return Promise.resolve({
-          unsignedTx,
+          tx: unsignedTx,
           atInputIndex: 0,
           nexts: [
 
           ]
-        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+        }) as Promise<ContractTransaction>
 
       } else if (nextInstance.full()) {
 
@@ -111,12 +110,12 @@ function Game(props: any) {
 
 
         return Promise.resolve({
-          unsignedTx,
+          tx: unsignedTx,
           atInputIndex: 0,
           nexts: [
 
           ]
-        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+        }) as Promise<ContractTransaction>
       } else {
 
         unsignedTx.addOutput(new bsv.Transaction.Output({
@@ -126,7 +125,7 @@ function Game(props: any) {
         .change(changeAddress)
 
         return Promise.resolve({
-          unsignedTx,
+          tx: unsignedTx,
           atInputIndex: 0,
           nexts: [
             {
@@ -135,7 +134,7 @@ function Game(props: any) {
               balance: initBalance
             }
           ]
-        }) as Promise<BuildMethodCallTxResult<TicTacToe>>
+        }) as Promise<ContractTransaction>
       }
     });
     const pubKey = current.is_alice_turn ? current.alice : current.bob;
