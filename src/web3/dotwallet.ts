@@ -5,7 +5,6 @@ import Request from '../Request';
 
 
 export class DotWallet extends wallet {
-  API_PREFIX: string;
   API_DOTWALLET: string;
   CLIENT_ID = 'c152e571fffb163bc99bb87c51577354';
   loginUrl: string;
@@ -13,7 +12,6 @@ export class DotWallet extends wallet {
 
   constructor(network: NetWork = NetWork.Mainnet) {
     super(network);
-    this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Regtest ? 'test' : 'main'}`;
     // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     this.API_DOTWALLET = network === NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     const redirect_uri = `${window.location.origin}/tic-tac-toe/`
