@@ -45,13 +45,13 @@ export class web3 {
 
 
 
-  
+
   static async buildDeployTx(contract: AbstractContract, amountInContract: number): Promise<Tx> {
 
     let wallet = new DotWallet();
 
     let changeAddress = '';
-    
+
     let publicKey = '';
 
 
@@ -62,7 +62,7 @@ export class web3 {
 
     tx.outputs.push({
       script: contract.lockingScript.toHex(),
-      satoshis: amountInContract 
+      satoshis: amountInContract
     });
 
     const minAmount = amountInContract + FEE;
@@ -86,11 +86,11 @@ export class web3 {
       changeAddress = utxos[0].addr || '';
       publicKey = utxos[0].pubkey || '';
 
-      DotWalletPublicKey.set(publicKey,'alice');
-      DotWalletAddress.set(changeAddress,'alice');
+      DotWalletPublicKey.set(publicKey, 'alice');
+      DotWalletAddress.set(changeAddress, 'alice');
 
-      DotWalletPublicKey.set(publicKey,'bob');
-      DotWalletAddress.set(changeAddress,'bob');
+      DotWalletPublicKey.set(publicKey, 'bob');
+      DotWalletAddress.set(changeAddress, 'bob');
 
       const changeAmount = utxos[0].satoshis - amountInContract - FEE;
 
@@ -109,12 +109,12 @@ export class web3 {
 
       return tx;
     }).then((tx) => {
-      return wallet.getSignature(toRawTx(tx), 0, SignType.ALL,changeAddress).then(signature => {
-          (window as any).bsv = bsv
-        const script = new bsv.Script()
-        .add(Buffer.from(signature,'hex'))
-        .add(new bsv.PublicKey(publicKey).toBuffer())
-        .toHex()
+      return wallet.getSignature(toRawTx(tx), 0, SignType.ALL, changeAddress).then(signature => {
+        (window as any).bsv = bsv
+        const script = new bsv.Script("")
+          .add(Buffer.from(signature, 'hex'))
+          .add(new bsv.PublicKey(publicKey).toBuffer())
+          .toHex()
 
         tx.inputs[0].script = script;
         return tx;
@@ -142,11 +142,11 @@ export class web3 {
       changeAddress = utxos[0].addr || '';
       publicKey = utxos[0].pubkey || '';
 
-      DotWalletPublicKey.set(publicKey,'alice');
-      DotWalletAddress.set(changeAddress,'alice');
+      DotWalletPublicKey.set(publicKey, 'alice');
+      DotWalletAddress.set(changeAddress, 'alice');
 
-      DotWalletPublicKey.set(publicKey,'bob');
-      DotWalletAddress.set(changeAddress,'bob');
+      DotWalletPublicKey.set(publicKey, 'bob');
+      DotWalletAddress.set(changeAddress, 'bob');
 
       const changeAmount = utxos[0].satoshis - amountInContract - FEE;
 

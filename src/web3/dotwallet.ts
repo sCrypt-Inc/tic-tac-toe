@@ -7,7 +7,7 @@ import Request from '../Request';
 export class DotWallet extends wallet {
   API_PREFIX: string;
   API_DOTWALLET: string;
-  CLIENT_ID = 'aa7f349975c72e5ba3178e636728f6b2';
+  CLIENT_ID = 'c152e571fffb163bc99bb87c51577354';
   loginUrl: string;
   sender: any;
 
@@ -16,7 +16,8 @@ export class DotWallet extends wallet {
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network === NetWork.Regtest ? 'test' : 'main'}`;
     // this.API_DOTWALLET = network == NetWork.Regtest ?  `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
     this.API_DOTWALLET = network === NetWork.Regtest ? `http://192.168.1.13:6001` : `https://api.ddpurse.com`;
-    const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(window.origin)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
+    const redirect_uri = `${window.location.origin}/tic-tac-toe/`
+    const loginUrl = `${this.API_DOTWALLET}/authorize?client_id=${this.CLIENT_ID}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=${encodeURIComponent("user.info")}`;
     this.loginUrl = loginUrl;
     this.sender = network === NetWork.Regtest ? {
       "appid": "test_bsv_coin_regular",
@@ -37,18 +38,30 @@ export class DotWallet extends wallet {
   code2token = async (code: string) => {
     if (!code) return;
     try {
-      const { data } = await axios.post(`https://common.mempool.com/api/dotwallet/get_access_token`, {
+      const redirect_uri = `${window.location.origin}/tic-tac-toe/`
+
+      const { data } = await axios.post(`https://api.ddpurse.com/v1/oauth2/get_access_token`, {
         code,
-        redirect_uri: window.location.origin
+        redirect_uri,
+        grant_type: "authorization_code",
+        client_secret: "243720bb8bb573b3f07f6ba2838f4478",
+        client_id: this.CLIENT_ID,
       });
-      const { access_token } = data.data;
-      if (access_token) {
-        localStorage[LocalStorageKey.accountToken] = access_token;
-        const query = getPlayerByState() == 'alice' ? "?player=alice" : "?player=bob";
-        window.location.href = `${window.location.origin}${query}`
+
+      if (data.data) {
+        console.log('get_access_token', data)
+        const { access_token } = data.data;
+        if (access_token) {
+          localStorage[LocalStorageKey.accountToken] = access_token;
+          const query = getPlayerByState() === 'alice' ? "?player=alice" : "?player=bob";
+          window.location.href = `${redirect_uri}${query}`
+        }
+      } else {
+        console.error('get_access_token error', data)
       }
     } catch (error) {
-      window.location.href = window.location.origin
+      console.error('error', error)
+      alert('Get access token failed.')
     }
   };
 
@@ -77,7 +90,7 @@ export class DotWallet extends wallet {
       addr,
     }, {
       headers: {
-       
+
       }
     }
     );

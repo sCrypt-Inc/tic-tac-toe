@@ -6,7 +6,7 @@ import { SignType, Tx, UTXO } from './wallet';
 export function signInput(privateKey: any, tx: any, inputIndex: number, sigHashType: number, utxo: UTXO): string {
 
   tx.inputs[inputIndex].output = new bsv.Transaction.Output({
-    script: utxo.script,
+    script: bsv.Script.fromHex(utxo.script),
     satoshis: utxo.satoshis
   });
 
@@ -40,7 +40,7 @@ export function toBsvTx(tx: Tx) {
       prevTxId: input.utxo.txHash,
       outputIndex: input.utxo.outputIndex,
       sequenceNumber: input.sequence,
-      script: input.script ? bsv.Script.fromHex(input.script) : new bsv.Script(),
+      script: input.script ? bsv.Script.fromHex(input.script) : new bsv.Script(""),
     }), bsv.Script.fromHex(input.utxo.script), input.utxo.satoshis);
   });
 

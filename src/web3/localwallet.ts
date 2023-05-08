@@ -6,11 +6,11 @@ import axios from 'axios';
 
 export class LocalWallet extends wallet {
   API_PREFIX: string;
-  privKey: any;
+  privKey: bsv.PrivateKey;
   constructor(network: NetWork, key: string) {
     super(network);
     this.API_PREFIX = `https://api.whatsonchain.com/v1/bsv/${network == NetWork.Testnet ? 'test' : 'main'}`;
-    this.privKey = key ? new bsv.PrivateKey.fromWIF(key) : new bsv.PrivateKey.fromRandom(network);
+    this.privKey = key ? bsv.PrivateKey.fromWIF(key) : bsv.PrivateKey.fromRandom(network);
   }
 
 
@@ -38,7 +38,7 @@ export class LocalWallet extends wallet {
 
     let tx_ = new bsv.Transaction(rawtx);
 
-    const utxo = tx_.inputs[inputIndex].utxo;
+    const utxo = (tx_.inputs[inputIndex] as any).utxo;
 
     return signInput(this.privKey, tx_, inputIndex, sigHashType, utxo);
   }
@@ -49,9 +49,10 @@ export class LocalWallet extends wallet {
     sigHashType: SignType,
     addr: string): Promise<string> {
 
-    let tx_ = new bsv.Transaction(rawtx);
+    const tx_ = new bsv.Transaction(rawtx);
 
-    return signTx(tx_, this.privKey, tx_.inputs[inputIndex].output.script.toASM(), tx_.inputs[inputIndex].output.satoshisBN, inputIndex, sigHashType);
+    const output = tx_.inputs[inputIndex].output as bsv.Transaction.Output;
+    return signTx(tx_, this.privKey, output.script.toASM(), output.satoshisBN.toNumber(), inputIndex, sigHashType);
 
   }
 
