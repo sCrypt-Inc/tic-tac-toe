@@ -1,9 +1,20 @@
 import { useState } from "react";
-import Board from './Board';
+import Board from "./Board";
 import { TicTacToe } from "./contracts/tictactoe";
 import { GameData, SquareData } from "./types";
 import { Utils } from "./utils";
-import { bsv, ContractTransaction, buildPublicKeyHashScript, hash160, Sig, SignatureResponse, SmartContract, findSig, MethodCallOptions, toHex } from 'scrypt-ts';
+import {
+  bsv,
+  ContractTransaction,
+  buildPublicKeyHashScript,
+  hash160,
+  Sig,
+  SignatureResponse,
+  SmartContract,
+  findSig,
+  MethodCallOptions,
+  toHex,
+} from "scrypt-ts";
 
 const calculateWinner = (squares: any) => {
   const lines = [
@@ -19,7 +30,13 @@ const calculateWinner = (squares: any) => {
 
   for (let i = 0; i < lines.length; i += 1) {
     const [a, b, c] = lines[i];
-    if (squares[a] && squares[b] && squares[c] && squares[a].label === squares[b].label && squares[a].label === squares[c].label) {
+    if (
+      squares[a] &&
+      squares[b] &&
+      squares[c] &&
+      squares[a].label === squares[b].label &&
+      squares[a].label === squares[c].label
+    ) {
       return { winner: squares[a], winnerRow: lines[i] };
     }
   }
@@ -27,14 +44,11 @@ const calculateWinner = (squares: any) => {
   return { winner: null, winnerRow: null };
 };
 
-
-
 function Game(props: any) {
-
   const gameData = props.gameData as GameData;
   const setGameData = props.setGameData;
 
-  const [lastTxId, setLastTxId] = useState<string>("")
+  const [lastTxId, setLastTxId] = useState<string>("");
 
   function canMove(i: number, squares: any) {
     if (!gameData.start) {
@@ -49,103 +63,105 @@ function Game(props: any) {
     return true;
   }
 
-  async function isRightSensiletAccount() {
-    const current = props.contract as TicTacToe;
-    
-    const expectedPubkey = current.is_alice_turn ? props.alicePubkey : props.bobPubkey;
-    
-    const pubkey = await current.signer.getDefaultPubKey();
-
-    return toHex(pubkey) === expectedPubkey;
-  }
-
   async function move(i: number, latestGameData: GameData) {
     const current = props.contract as TicTacToe;
     const nextInstance = current.next();
 
-    const initBalance = current.from?.tx.outputs[current.from?.outputIndex].satoshis as number;
+    const initBalance = current.balance;
 
     // update nextInstance state
     Object.assign(nextInstance, Utils.toContractState(latestGameData));
 
-    current.bindTxBuilder('move', async (current: TicTacToe, options: MethodCallOptions<SmartContract>, n: bigint, sig: Sig) => {
-    
-      let play = current.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
+    current.bindTxBuilder(
+      "move",
+      async (
+        current: TicTacToe,
+        options: MethodCallOptions<SmartContract>,
+        n: bigint,
+        sig: Sig
+      ) => {
+        let play = current.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
 
+        const changeAddress = await current.signer.getDefaultAddress();
 
-      const changeAddress = await current.signer.getDefaultAddress();
+        const unsignedTx: bsv.Transaction = new bsv.Transaction();
 
-      const unsignedTx: bsv.Transaction = new bsv.Transaction()
-        .addInputFromPrevTx(current.from?.tx as bsv.Transaction, current.from?.outputIndex)
+        unsignedTx.addInput(current.buildContractInput());
 
-      if (nextInstance.won(play)) {
+        if (nextInstance.won(play)) {
+          unsignedTx
+            .addOutput(
+              new bsv.Transaction.Output({
+                script: current.is_alice_turn
+                  ? buildPublicKeyHashScript(hash160(current.alice))
+                  : buildPublicKeyHashScript(hash160(current.bob)),
+                satoshis: initBalance,
+              })
+            )
+            .change(changeAddress);
 
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: current.is_alice_turn ? buildPublicKeyHashScript(hash160(current.alice)) : buildPublicKeyHashScript(hash160(current.bob)),
-          satoshis: initBalance
-        }))
-        .change(changeAddress)
+          return Promise.resolve({
+            tx: unsignedTx,
+            atInputIndex: 0,
+            nexts: [],
+          }) as Promise<ContractTransaction>;
+        } else if (nextInstance.full()) {
+          const halfAmount = initBalance / 2;
 
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
+          unsignedTx
+            .addOutput(
+              new bsv.Transaction.Output({
+                script: buildPublicKeyHashScript(hash160(current.alice)),
+                satoshis: halfAmount,
+              })
+            )
+            .addOutput(
+              new bsv.Transaction.Output({
+                script: buildPublicKeyHashScript(hash160(current.bob)),
+                satoshis: halfAmount,
+              })
+            )
+            .change(changeAddress);
 
-          ]
-        }) as Promise<ContractTransaction>
+          return Promise.resolve({
+            tx: unsignedTx,
+            atInputIndex: 0,
+            nexts: [],
+          }) as Promise<ContractTransaction>;
+        } else {
+          unsignedTx
+            .addOutput(
+              new bsv.Transaction.Output({
+                script: nextInstance.lockingScript,
+                satoshis: initBalance,
+              })
+            )
+            .change(changeAddress);
 
-      } else if (nextInstance.full()) {
-
-        const halfAmount = initBalance / 2
-
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: buildPublicKeyHashScript(hash160(current.alice)),
-          satoshis: halfAmount
-        }))
-        .addOutput(new bsv.Transaction.Output({
-          script: buildPublicKeyHashScript(hash160(current.bob)),
-          satoshis: halfAmount
-        }))
-        .change(changeAddress)
-
-
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
-
-          ]
-        }) as Promise<ContractTransaction>
-      } else {
-
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: nextInstance.lockingScript,
-          satoshis: initBalance,
-        }))
-        .change(changeAddress)
-
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
-            {
-              instance: nextInstance,
-              atOutputIndex: 0,
-              balance: initBalance
-            }
-          ]
-        }) as Promise<ContractTransaction>
+          return Promise.resolve({
+            tx: unsignedTx,
+            atInputIndex: 0,
+            nexts: [
+              {
+                instance: nextInstance,
+                atOutputIndex: 0,
+                balance: initBalance,
+              },
+            ],
+          }) as Promise<ContractTransaction>;
+        }
       }
-    });
+    );
     const pubKey = current.is_alice_turn ? current.alice : current.bob;
     return current.methods.move(
       BigInt(i),
       (sigResponses: SignatureResponse[]) => {
-        return findSig(sigResponses, bsv.PublicKey.fromString(pubKey))
+        return findSig(sigResponses, bsv.PublicKey.fromString(pubKey));
       },
       {
         pubKeyOrAddrToSign: bsv.PublicKey.fromString(pubKey),
-      } as MethodCallOptions<TicTacToe>)
+      } as MethodCallOptions<TicTacToe>
+    );
   }
 
   async function handleClick(i: number) {
@@ -153,22 +169,14 @@ function Game(props: any) {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
-
-    const isRightAccount = await isRightSensiletAccount();
-
-    if (!isRightAccount) {
-      alert(`Please switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
-      return;
-    }
-
     if (!canMove(i, squares)) {
-      console.error('can not move now!')
+      console.error("can not move now!");
       return;
     }
 
     squares[i] = {
-      label: gameData.isAliceTurn ? 'X' : 'O',
-      n: history.length
+      label: gameData.isAliceTurn ? "X" : "O",
+      n: history.length,
     };
 
     let winner = calculateWinner(squares).winner;
@@ -177,85 +185,107 @@ function Game(props: any) {
       ...gameData,
       history: history.concat([
         {
-          squares
+          squares,
         },
       ]),
       isAliceTurn: winner ? gameData.isAliceTurn : !gameData.isAliceTurn,
       currentStepNumber: history.length,
-      start: true
-    }
+      start: true,
+    };
 
-    const {tx, nexts} = await move(i, gameData_);
+    const { tx, nexts } = await move(i, gameData_);
 
-    if(nexts && nexts[0]) {
-      props.setContract(nexts[0].instance)
+    if (nexts && nexts[0]) {
+      props.setContract(nexts[0].instance);
     }
 
     const square = squares[i] as SquareData;
-    if(square) {
+    if (square) {
       square.tx = tx.id;
     }
 
-    console.log('move txid:', tx.id)
+    console.log("move txid:", tx.id);
     // update states
-    setGameData(gameData_)
-    setLastTxId(tx.id)
+    setGameData(gameData_);
+    setLastTxId(tx.id);
   }
-
-
-
-
-
 
   const { history } = gameData;
   const current = history[gameData.currentStepNumber];
   const { winner, winnerRow } = calculateWinner(current.squares);
 
-
   let status;
 
   let icon;
 
-
   if (!gameData.isAliceTurn) {
-    icon = <div className="bob" > Bob <img src="/tic-tac-toe/bob.png" alt="" /></div>
+    icon = (
+      <div className="bob">
+        {" "}
+        Bob <img src="/tic-tac-toe/bob.png" alt="" />
+      </div>
+    );
   } else {
-    icon = <div className="alice" > Alice <img src="/tic-tac-toe/alice.jpg" alt="" /></div>
+    icon = (
+      <div className="alice">
+        {" "}
+        Alice <img src="/tic-tac-toe/alice.jpg" alt="" />
+      </div>
+    );
   }
 
   if (winner) {
-    let winnerName = winner.label === 'X' ? 'Alice' : 'Bob';
+    let winnerName = winner.label === "X" ? "Alice" : "Bob";
     status = `Winner is ${winnerName}`;
   } else if (history.length === 10) {
-    status = 'Draw. No one won.';
+    status = "Draw. No one won.";
   } else {
-
-    let nexter = gameData.isAliceTurn ? 'Alice' : 'Bob';
+    let nexter = gameData.isAliceTurn ? "Alice" : "Bob";
 
     status = `Next player: ${nexter}`;
   }
 
   return (
-    <div className="game" >
-      <div className="game-board" >
-
-        <div className="game-title" >
+    <div className="game">
+      <div className="game-board">
+        <div className="game-title">
           {icon}
-          < div className="game-status" > {status} </div>
+          <div className="game-status"> {status} </div>
         </div>
 
-        < Board
+        <Board
           squares={current.squares}
           winnerSquares={winnerRow}
           onClick={handleClick}
         />
 
-        <div className="game-bottom" >
-          {props.deployedTxId ? <div className="bet"><a href={Utils.getTxUri(props.deployedTxId)} target="_blank" rel="noreferrer" >Deploy transaction</a> </div> : undefined}
-          {winner || history.length === 10 ? <div className="end"><a href={Utils.getTxUri(lastTxId)} target="_blank" rel="noreferrer" >Withdraw transaction</a> </div> : undefined }
+        <div className="game-bottom">
+          {props.deployedTxId ? (
+            <div className="bet">
+              <a
+                href={Utils.getTxUri(props.deployedTxId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Deploy transaction
+              </a>{" "}
+            </div>
+          ) : undefined}
+          {winner || history.length === 10 ? (
+            <div className="end">
+              <a
+                href={Utils.getTxUri(lastTxId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Withdraw transaction
+              </a>{" "}
+            </div>
+          ) : undefined}
         </div>
       </div>
-    </div>);
+    </div>
+  );
 }
 
 export default Game;

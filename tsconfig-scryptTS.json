@@ -4,7 +4,7 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "ES2020"
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -13,16 +13,21 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
     "experimentalDecorators": true,
-    "plugins": []
+    "plugins": [
+      {
+        "transform": "scrypt-ts/dist/transformation/transformer",
+        "outDir": "./artifacts",
+        "transformProgram": true
+      }
+    ]
   },
   "include": [
-    "src"
+    "src/contracts/**.ts"
   ]
 }
