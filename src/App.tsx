@@ -52,7 +52,7 @@ function App() {
 
   const signer = signerRef.current;
 
-  useEffect((login = sensiletLogin) => {
+  useEffect((login = walletLogin) => {
     const urlParams = new URLSearchParams(window.location.search);
     const state = urlParams.get("state");
 
@@ -99,7 +99,7 @@ function App() {
     setGameData(Object.assign({}, gameData, initialGameData));
   };
 
-  const sensiletLogin = async () => {
+  const walletLogin = async () => {
     try {
       const { isAuthenticated, error } = await signer.requestAuth();
       if (!isAuthenticated) {
@@ -155,7 +155,7 @@ function App() {
         ) : (
           <button
             className="pure-button button-large sensilet"
-            onClick={sensiletLogin}
+            onClick={walletLogin}
           >
             Connect Wallet
           </button>
