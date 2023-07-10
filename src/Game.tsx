@@ -63,7 +63,7 @@ function Game(props: any) {
     const current = props.contract as TicTacToe;
     const nextInstance = current.next();
 
-    const initBalance = current.from?.tx.outputs[current.from?.outputIndex].satoshis as number;
+    const initBalance = current.balance
 
     // update nextInstance state
     Object.assign(nextInstance, Utils.toContractState(latestGameData));
@@ -76,7 +76,7 @@ function Game(props: any) {
       const changeAddress = await current.signer.getDefaultAddress();
 
       const unsignedTx: bsv.Transaction = new bsv.Transaction()
-        .addInputFromPrevTx(current.from?.tx as bsv.Transaction, current.from?.outputIndex)
+        .addInput(current.buildContractInput())
 
       if (nextInstance.won(play)) {
 

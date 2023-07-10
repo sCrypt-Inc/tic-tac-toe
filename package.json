@@ -15,7 +15,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "scrypt-ts": "^0.1.8-beta.1",
+    "scrypt-ts": "beta",
     "typescript": "=4.8.4",
     "web-vitals": "^2.1.4"
   },
@@ -26,7 +26,9 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
-    "postinstall": "npx scrypt-cli compile"
+    "postinstall": "npm run build:contract",
+    "build:contract": "npx scrypt-cli compile",
+    "deploy:contract": "npx ts-node ./deploy.ts"
   },
   "eslintConfig": {
     "extends": [
