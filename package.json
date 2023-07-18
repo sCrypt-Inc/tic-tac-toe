@@ -24,6 +24,7 @@
     "deploy": "gh-pages -d build",
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
+    "pretest": "npx scrypt-cli compile",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
     "postinstall": "npm run build:contract",

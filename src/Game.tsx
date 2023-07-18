@@ -51,93 +51,21 @@ function Game(props: any) {
 
   async function isRightSensiletAccount() {
     const current = props.contract as TicTacToe;
-    
-    const expectedPubkey = current.is_alice_turn ? props.alicePubkey : props.bobPubkey;
-    
+
+    const expectedPubkey = current.isAliceTurn ? props.alicePubkey : props.bobPubkey;
+
     const pubkey = await current.signer.getDefaultPubKey();
 
     return toHex(pubkey) === expectedPubkey;
   }
 
-  async function move(i: number, latestGameData: GameData) {
+  async function move(i: number) {
     const current = props.contract as TicTacToe;
-    const nextInstance = current.next();
 
-    const initBalance = current.balance
+    current.bindTxBuilder('move', TicTacToe.buildTxForMove);
 
-    // update nextInstance state
-    Object.assign(nextInstance, Utils.toContractState(latestGameData));
+    const pubKey = current.isAliceTurn ? current.alice : current.bob;
 
-    current.bindTxBuilder('move', async (current: TicTacToe, options: MethodCallOptions<SmartContract>, n: bigint, sig: Sig) => {
-    
-      let play = current.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
-
-
-      const changeAddress = await current.signer.getDefaultAddress();
-
-      const unsignedTx: bsv.Transaction = new bsv.Transaction()
-        .addInput(current.buildContractInput())
-
-      if (nextInstance.won(play)) {
-
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: current.is_alice_turn ? buildPublicKeyHashScript(hash160(current.alice)) : buildPublicKeyHashScript(hash160(current.bob)),
-          satoshis: initBalance
-        }))
-        .change(changeAddress)
-
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
-
-          ]
-        }) as Promise<ContractTransaction>
-
-      } else if (nextInstance.full()) {
-
-        const halfAmount = initBalance / 2
-
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: buildPublicKeyHashScript(hash160(current.alice)),
-          satoshis: halfAmount
-        }))
-        .addOutput(new bsv.Transaction.Output({
-          script: buildPublicKeyHashScript(hash160(current.bob)),
-          satoshis: halfAmount
-        }))
-        .change(changeAddress)
-
-
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
-
-          ]
-        }) as Promise<ContractTransaction>
-      } else {
-
-        unsignedTx.addOutput(new bsv.Transaction.Output({
-          script: nextInstance.lockingScript,
-          satoshis: initBalance,
-        }))
-        .change(changeAddress)
-
-        return Promise.resolve({
-          tx: unsignedTx,
-          atInputIndex: 0,
-          nexts: [
-            {
-              instance: nextInstance,
-              atOutputIndex: 0,
-              balance: initBalance
-            }
-          ]
-        }) as Promise<ContractTransaction>
-      }
-    });
-    const pubKey = current.is_alice_turn ? current.alice : current.bob;
     return current.methods.move(
       BigInt(i),
       (sigResponses: SignatureResponse[]) => {
@@ -145,6 +73,7 @@ function Game(props: any) {
       },
       {
         pubKeyOrAddrToSign: bsv.PublicKey.fromString(pubKey),
+        changeAddress: await current.signer.getDefaultAddress()
       } as MethodCallOptions<TicTacToe>)
   }
 
@@ -171,9 +100,23 @@ function Game(props: any) {
       n: history.length
     };
 
-    let winner = calculateWinner(squares).winner;
+    // Call smart contract move method.
+    const { tx, nexts } = await move(i);
 
-    const gameData_ = {
+    const square = squares[i] as SquareData;
+    if (square) {
+      square.tx = tx.id;
+    }
+
+    console.log('move txid:', tx.id)
+
+    // update states
+    if (nexts && nexts[0]) {
+      const instance = nexts[0].instance
+      props.setContract(instance)
+    }
+    const winner = calculateWinner(squares).winner;
+    setGameData({
       ...gameData,
       history: history.concat([
         {
@@ -183,28 +126,9 @@ function Game(props: any) {
       isAliceTurn: winner ? gameData.isAliceTurn : !gameData.isAliceTurn,
       currentStepNumber: history.length,
       start: true
-    }
-
-    const {tx, nexts} = await move(i, gameData_);
-
-    if(nexts && nexts[0]) {
-      props.setContract(nexts[0].instance)
-    }
-
-    const square = squares[i] as SquareData;
-    if(square) {
-      square.tx = tx.id;
-    }
-
-    console.log('move txid:', tx.id)
-    // update states
-    setGameData(gameData_)
+    })
     setLastTxId(tx.id)
   }
-
-
-
-
 
 
   const { history } = gameData;
@@ -252,7 +176,7 @@ function Game(props: any) {
 
         <div className="game-bottom" >
           {props.deployedTxId ? <div className="bet"><a href={Utils.getTxUri(props.deployedTxId)} target="_blank" rel="noreferrer" >Deploy transaction</a> </div> : undefined}
-          {winner || history.length === 10 ? <div className="end"><a href={Utils.getTxUri(lastTxId)} target="_blank" rel="noreferrer" >Withdraw transaction</a> </div> : undefined }
+          {winner || history.length === 10 ? <div className="end"><a href={Utils.getTxUri(lastTxId)} target="_blank" rel="noreferrer" >Withdraw transaction</a> </div> : undefined}
         </div>
       </div>
     </div>);

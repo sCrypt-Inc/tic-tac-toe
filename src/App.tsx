@@ -62,8 +62,8 @@ function App() {
         start: true
       }))
     } catch (e) {
-      console.error('deploy TicTacToe failes', e)
-      alert('deploy TicTacToe failes')
+      console.error('Deploying TicTacToe failed.', e)
+      alert('Deploying TicTacToe failed.')
     }
 
   };

@@ -1,7 +1,10 @@
 import {
     prop, method, SmartContract, PubKey, FixedArray, assert, Sig, Utils, toByteString, hash160,
     hash256,
-    fill
+    fill,
+    ContractTransaction,
+    MethodCallOptions,
+    bsv
 } from "scrypt-ts";
 
 export class TicTacToe extends SmartContract {
@@ -11,23 +14,20 @@ export class TicTacToe extends SmartContract {
     bob: PubKey;
 
     @prop(true)
-    is_alice_turn: boolean;
+    isAliceTurn: boolean;
 
     @prop(true)
     board: FixedArray<bigint, 9>;
 
-    @prop()
     static readonly EMPTY: bigint = 0n;
-    @prop()
     static readonly ALICE: bigint = 1n;
-    @prop()
     static readonly BOB: bigint = 2n;
 
     constructor(alice: PubKey, bob: PubKey) {
         super(...arguments)
         this.alice = alice;
         this.bob = bob;
-        this.is_alice_turn = true;
+        this.isAliceTurn = true;
         this.board = fill(TicTacToe.EMPTY, 9);
     }
 
@@ -36,14 +36,14 @@ export class TicTacToe extends SmartContract {
         // check position `n`
         assert(n >= 0n && n < 9n);
         // check signature `sig`
-        let player: PubKey = this.is_alice_turn ? this.alice : this.bob;
+        let player: PubKey = this.isAliceTurn ? this.alice : this.bob;
         assert(this.checkSig(sig, player), `checkSig failed, pubkey: ${player}`);
         // update stateful properties to make the move
         assert(this.board[Number(n)] === TicTacToe.EMPTY, `board at position ${n} is not empty: ${this.board[Number(n)]}`);
-        let play = this.is_alice_turn ? TicTacToe.ALICE : TicTacToe.BOB;
+        let play = this.isAliceTurn ? TicTacToe.ALICE : TicTacToe.BOB;
         this.board[Number(n)] = play;
-        this.is_alice_turn = !this.is_alice_turn;
-
+        this.isAliceTurn = !this.isAliceTurn;
+        
         // build the transation outputs
         let outputs = toByteString('');
         if (this.won(play)) {
@@ -103,4 +103,105 @@ export class TicTacToe extends SmartContract {
         return full;
     }
 
+    static buildTxForMove(
+        current: TicTacToe,
+        options: MethodCallOptions<TicTacToe>,
+        n: bigint
+    ): Promise<ContractTransaction> {
+        const play = current.isAliceTurn ? TicTacToe.ALICE : TicTacToe.BOB
+        const nextInstance = current.next()
+        nextInstance.board[Number(n)] = play
+        nextInstance.isAliceTurn = !current.isAliceTurn
+
+        const unsignedTx: bsv.Transaction = new bsv.Transaction().addInput(
+            current.buildContractInput(options.fromUTXO)
+        )
+
+        if (nextInstance.won(play)) {
+            const script = Utils.buildPublicKeyHashScript(
+                hash160(current.isAliceTurn ? current.alice : current.bob)
+            )
+            unsignedTx
+                .addOutput(
+                    new bsv.Transaction.Output({
+                        script: bsv.Script.fromHex(script),
+                        satoshis: current.balance,
+                    })
+                )
+            
+            if (options.changeAddress) {
+                unsignedTx.change(options.changeAddress)
+            }
+
+            return Promise.resolve({
+                tx: unsignedTx,
+                atInputIndex: 0,
+                nexts: [],
+            })
+        }
+
+        if (nextInstance.full()) {
+            const halfAmount = current.balance / 2
+
+            unsignedTx
+                .addOutput(
+                    new bsv.Transaction.Output({
+                        script: bsv.Script.fromHex(
+                            Utils.buildPublicKeyHashScript(
+                                hash160(current.alice)
+                            )
+                        ),
+                        satoshis: halfAmount,
+                    })
+                )
+                .addOutput(
+                    new bsv.Transaction.Output({
+                        script: bsv.Script.fromHex(
+                            Utils.buildPublicKeyHashScript(hash160(current.bob))
+                        ),
+                        satoshis: halfAmount,
+                    })
+                )
+
+            if (options.changeAddress) {
+                unsignedTx.change(options.changeAddress)
+            }
+
+            return Promise.resolve({
+                tx: unsignedTx,
+                atInputIndex: 0,
+                nexts: [],
+            })
+        }
+
+        unsignedTx
+            .setOutput(0, () => {
+                return new bsv.Transaction.Output({
+                    script: nextInstance.lockingScript,
+                    satoshis: current.balance,
+                })
+            })
+            
+            
+        if (options.changeAddress) {
+            unsignedTx.change(options.changeAddress)
+        }
+        
+
+        const nexts = [
+            {
+                instance: nextInstance,
+                atOutputIndex: 0,
+                balance: current.balance,
+            },
+        ]
+
+        return Promise.resolve({
+            tx: unsignedTx,
+            atInputIndex: 0,
+            nexts,
+            next: nexts[0],
+        })
+
+    }
 }
