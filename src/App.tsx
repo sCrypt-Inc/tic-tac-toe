@@ -73,6 +73,7 @@ function App() {
   };
 
   const sensiletLogin = async () => {
+    console.log('sensiletLogin...')
     try {
       const provider = new DefaultProvider();
       const signer = new SensiletSigner(provider);
