@@ -2,7 +2,7 @@ import "./App.css";
 import Game from "./Game";
 import { useState, useRef } from "react";
 import TitleBar from "./TitleBar";
-import { DefaultProvider, SensiletSigner, PubKey, toHex } from "scrypt-ts";
+import { DefaultProvider, DefaultProviderOption, PandaSigner, PubKey, Signer, bsv, toHex } from "scrypt-ts";
 import { TicTacToe } from "./contracts/tictactoe";
 const initialGameData = {
   amount: 0,
@@ -19,11 +19,10 @@ const initialGameData = {
 }
 
 function App() {
-
   const [gameData, setGameData] = useState(initialGameData);
   const [isConnected, setConnected] = useState(false);
 
-  const signerRef = useRef<SensiletSigner>();
+  const signerRef = useRef<Signer>();
   const [contract, setContract] = useState<TicTacToe | undefined>(undefined)
   const [deployedTxId, setDeployedTxId] = useState<string>("")
   const [alicePubkey, setAlicePubkey] = useState("");
@@ -39,11 +38,8 @@ function App() {
       return
     }
 
-
-
     try {
-      const signer = signerRef.current as SensiletSigner;
-
+      const signer = signerRef.current;
 
       const instance = new TicTacToe(
         PubKey(toHex(alicePubkey)),
@@ -72,11 +68,13 @@ function App() {
     setGameData(Object.assign({}, gameData, initialGameData))
   };
 
-  const sensiletLogin = async () => {
-    console.log('sensiletLogin...')
+  const handleConnect = async () => {
     try {
-      const provider = new DefaultProvider();
-      const signer = new SensiletSigner(provider);
+      const provider = new DefaultProvider({
+        network: bsv.Networks.testnet
+      } as DefaultProviderOption);
+
+      const signer = new PandaSigner(provider)
 
       signerRef.current = signer;
 
@@ -86,7 +84,7 @@ function App() {
       }
 
       const pubkey = await signer.getDefaultPubKey();
-      const changeAccountMessage = "Please change your account in Sensilet wallet, click again to get bob PublicKey";
+      const changeAccountMessage = "Please switch wallet and hit the connect button again to get Bob's public key.";
 
       if (!alicePubkey) {
 
@@ -113,8 +111,8 @@ function App() {
       }
 
     } catch (error) {
-      console.error("sensiletLogin failed", error);
-      alert("sensiletLogin failed")
+      console.error("Connecting wallet failed", error);
+      alert("Connecting wallet failed")
     }
   };
 
@@ -128,28 +126,29 @@ function App() {
           onCancel={cancelGame}
           started={gameData.start}
         />
-        <Game gameData={gameData} 
-        setGameData={setGameData} 
-        deployedTxId={deployedTxId} 
-        contract={contract} 
-        setContract={setContract}
-        alicePubkey={alicePubkey}
-        bobPubkey={bobPubkey} />
+        <Game gameData={gameData}
+          setGameData={setGameData}
+          deployedTxId={deployedTxId}
+          contract={contract}
+          setContract={setContract}
+          alicePubkey={alicePubkey}
+          bobPubkey={bobPubkey} />
 
         {
           isConnected ?
-          <div>
-            <label>Alice Balance: {alicebalance} <span> (satoshis)</span></label>
-            <br/>
-            <label>Bob Balance: {bobbalance}  <span> (satoshis)</span></label>
-          </div>
-            :
-            <button
-              className="pure-button button-large sensilet"
-              onClick={sensiletLogin}
-            >
-              Connect Wallet
-            </button>
+            <div>
+              <label>Alice Balance: {alicebalance} <span> (satoshis)</span></label>
+              <br />
+              <label>Bob Balance: {bobbalance}  <span> (satoshis)</span></label>
+            </div>
+            : (
+              <button
+                className="pure-button button-large"
+                onClick={handleConnect}
+              >
+                Connect Wallet
+              </button>
+            )
         }
       </header>
     </div>
