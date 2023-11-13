@@ -44,7 +44,7 @@ function Game(props: any) {
     return true;
   }
 
-  async function isRightSensiletAccount() {
+  async function isRightAccount() {
     const current = props.contract as TicTacToe;
 
     const expectedPubkey = current.isAliceTurn ? props.alicePubkey : props.bobPubkey;
@@ -81,10 +81,8 @@ function Game(props: any) {
     const history = gameData.history.slice(0, gameData.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
-    
-    const isRightAccount = await isRightSensiletAccount();
 
-    if (!isRightAccount) {
+    if (!(await isRightAccount())) {
       alert(`Please switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
       return;
     }
