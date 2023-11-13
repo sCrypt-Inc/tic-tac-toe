@@ -6,7 +6,7 @@ const Square = (props: any) => {
 
   let tx = squaredata?.tx ? `https://test.whatsonchain.com/tx/${props.value.tx}` : "";
   return (
-    <div className="squarewapper">
+    <div className="square-wrapper">
       <button className={`${props.winnerClass} square`} onClick={props.onClick}>
         {squaredata ? <a href={tx} target="_blank" title="Click to see the transaction" rel="noreferrer">{squaredata.label}</a> : undefined}
       </button>

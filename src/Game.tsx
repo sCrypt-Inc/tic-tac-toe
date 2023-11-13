@@ -37,11 +37,6 @@ function Game(props: any) {
   const [lastTxId, setLastTxId] = useState<string>("")
 
   function canMove(i: number, squares: any) {
-    if (!gameData.start) {
-      alert("Please start the game!");
-      return;
-    }
-
     if (calculateWinner(squares).winner || squares[i]) {
       return false;
     }
@@ -78,11 +73,15 @@ function Game(props: any) {
   }
 
   async function handleClick(i: number) {
+    if (!gameData.start) {
+      alert(`Game hasn't been started yet.`)
+      return;
+    }
+    
     const history = gameData.history.slice(0, gameData.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
-
-
+    
     const isRightAccount = await isRightSensiletAccount();
 
     if (!isRightAccount) {
