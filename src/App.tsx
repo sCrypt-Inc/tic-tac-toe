@@ -2,7 +2,7 @@ import "./App.css";
 import Game from "./Game";
 import { useState, useRef } from "react";
 import TitleBar from "./TitleBar";
-import { DefaultProvider, SensiletSigner, PubKey, toHex } from "scrypt-ts";
+import { DefaultProvider, PandaSigner, PubKey, toHex } from "scrypt-ts";
 import { TicTacToe } from "./contracts/tictactoe";
 const initialGameData = {
   amount: 0,
@@ -23,7 +23,7 @@ function App() {
   const [gameData, setGameData] = useState(initialGameData);
   const [isConnected, setConnected] = useState(false);
 
-  const signerRef = useRef<SensiletSigner>();
+  const signerRef = useRef<PandaSigner>();
   const [contract, setContract] = useState<TicTacToe | undefined>(undefined)
   const [deployedTxId, setDeployedTxId] = useState<string>("")
   const [alicePubkey, setAlicePubkey] = useState("");
@@ -42,7 +42,7 @@ function App() {
 
 
     try {
-      const signer = signerRef.current as SensiletSigner;
+      const signer = signerRef.current as PandaSigner;
 
 
       const instance = new TicTacToe(
@@ -72,11 +72,11 @@ function App() {
     setGameData(Object.assign({}, gameData, initialGameData))
   };
 
-  const sensiletLogin = async () => {
-    console.log('sensiletLogin...')
+  const login = async () => {
+    console.log('login...')
     try {
       const provider = new DefaultProvider();
-      const signer = new SensiletSigner(provider);
+      const signer = new PandaSigner(provider);
 
       signerRef.current = signer;
 
@@ -86,35 +86,17 @@ function App() {
       }
 
       const pubkey = await signer.getDefaultPubKey();
-      const changeAccountMessage = "Please change your account in Sensilet wallet, click again to get bob PublicKey";
 
-      if (!alicePubkey) {
-
-        setAlicePubkey(toHex(pubkey))
-
-        signer.getBalance().then(balance => {
-          setAliceBalance(balance.confirmed + balance.unconfirmed)
-        })
-
-        alert(changeAccountMessage)
-
-      } else {
-        if (toHex(pubkey) !== alicePubkey) {
-          setBobPubkey(toHex(pubkey))
-
-          signer.getBalance().then(balance => {
-            setBobBalance(balance.confirmed + balance.unconfirmed)
-          })
-
-          setConnected(true);
-        } else {
-          alert(changeAccountMessage)
-        }
-      }
-
+      setAlicePubkey(toHex(pubkey))
+      setBobPubkey(toHex(pubkey))
+      signer.getBalance().then(balance => {
+        setAliceBalance(balance.confirmed + balance.unconfirmed)
+        setBobBalance(balance.confirmed + balance.unconfirmed)
+      })
+      setConnected(true);
     } catch (error) {
-      console.error("sensiletLogin failed", error);
-      alert("sensiletLogin failed")
+      console.error("Panda Wallet login failed", error);
+      alert("Panda Wallet login failed")
     }
   };
 
@@ -145,8 +127,8 @@ function App() {
           </div>
             :
             <button
-              className="pure-button button-large sensilet"
-              onClick={sensiletLogin}
+              className="pure-button button-large"
+              onClick={login}
             >
               Connect Wallet
             </button>

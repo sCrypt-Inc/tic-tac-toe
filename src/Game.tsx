@@ -44,16 +44,6 @@ function Game(props: any) {
     return true;
   }
 
-  async function isRightSensiletAccount() {
-    const current = props.contract as TicTacToe;
-
-    const expectedPubkey = current.isAliceTurn ? props.alicePubkey : props.bobPubkey;
-
-    const pubkey = await current.signer.getDefaultPubKey();
-
-    return toHex(pubkey) === expectedPubkey;
-  }
-
   async function move(i: number) {
     const current = props.contract as TicTacToe;
 
@@ -81,13 +71,7 @@ function Game(props: any) {
     const history = gameData.history.slice(0, gameData.currentStepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
-    
-    const isRightAccount = await isRightSensiletAccount();
-
-    if (!isRightAccount) {
-      alert(`Please switch Sensilet to ${gameData.isAliceTurn ? "Alice" : "Bob"} account!`)
-      return;
-    }
+  
 
     if (!canMove(i, squares)) {
       console.error('can not move now!')
@@ -100,33 +84,40 @@ function Game(props: any) {
     };
 
     // Call smart contract move method.
-    const { tx, nexts } = await move(i);
 
-    const square = squares[i] as SquareData;
-    if (square) {
-      square.tx = tx.id;
+    try {
+      const { tx, nexts } = await move(i);
+
+      const square = squares[i] as SquareData;
+      if (square) {
+        square.tx = tx.id;
+      }
+  
+      console.log('move txid:', tx.id)
+  
+      // update states
+      if (nexts && nexts[0]) {
+        const instance = nexts[0].instance
+        props.setContract(instance)
+      }
+      const winner = calculateWinner(squares).winner;
+      setGameData({
+        ...gameData,
+        history: history.concat([
+          {
+            squares
+          },
+        ]),
+        isAliceTurn: winner ? gameData.isAliceTurn : !gameData.isAliceTurn,
+        currentStepNumber: history.length,
+        start: true
+      })
+      setLastTxId(tx.id)
+    } catch (error) {
+      console.error("error:", error);
+      alert("ERROR:" + error.message)
     }
-
-    console.log('move txid:', tx.id)
-
-    // update states
-    if (nexts && nexts[0]) {
-      const instance = nexts[0].instance
-      props.setContract(instance)
-    }
-    const winner = calculateWinner(squares).winner;
-    setGameData({
-      ...gameData,
-      history: history.concat([
-        {
-          squares
-        },
-      ]),
-      isAliceTurn: winner ? gameData.isAliceTurn : !gameData.isAliceTurn,
-      currentStepNumber: history.length,
-      start: true
-    })
-    setLastTxId(tx.id)
+   
   }
 
 
