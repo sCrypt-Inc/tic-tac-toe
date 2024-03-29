@@ -3,7 +3,7 @@ import Board from './Board';
 import { TicTacToe } from "./contracts/tictactoe";
 import { GameData, SquareData } from "./types";
 import { Utils } from "./utils";
-import { bsv, SignatureResponse, findSig, MethodCallOptions, toHex } from 'scrypt-ts';
+import { bsv, SignatureResponse, findSig, MethodCallOptions } from 'scrypt-ts';
 
 const calculateWinner = (squares: any) => {
   const lines = [
