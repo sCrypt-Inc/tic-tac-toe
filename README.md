@@ -2,7 +2,7 @@
 
 Build your first fully onchain application on Bitcoin.
 
-[Go to play](https://scrypt.io/tic-tac-toe/)
+[Go to play](https://classic.scrypt.io/tic-tac-toe/)
 
 [Tutorial](https://xiaohuiliu.medium.com/full-stack-bitcoin-dapp-tutorial-adff2bc4f657)
 
