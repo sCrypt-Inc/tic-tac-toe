@@ -17,9 +17,9 @@ import {
   } from "scrypt-ts";
 
   export enum Player {
-    EMPTY = 0,
-    ALICE = 1,
-    BOB = 2
+    EMPTY,
+    ALICE,
+    BOB
 }
   
   export class TicTacToe extends SmartContract {
